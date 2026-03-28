@@ -1,0 +1,50 @@
+# Keep the repository aligned with the subset documented in README.md.
+
+# OS / IDE / Python caches
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
+**/__pycache__/
+*.py[cod]
+*.pyo
+.ipynb_checkpoints/
+
+# Local notes and reports not part of the reproducible repository
+AGENT.md
+Current.md
+ppg-needtodo*.docx
+reports/
+
+# Raw dataset stays local; keep only placement/readme notes
+data/raw/GalaxyPPG/*
+!data/raw/GalaxyPPG/README.md
+
+# Model weights are downloaded separately according to README.md
+external/pulseppg/pulseppg_model_weights.zip
+external/pulseppg/pulseppg/experiments/out/motifdist/
+external/pulseppg/pulseppg/experiments/out/pulseppg/*
+!external/pulseppg/pulseppg/experiments/out/pulseppg/.gitkeep
+external/papagei-foundation-model/weights/*
+!external/papagei-foundation-model/weights/.gitkeep
+
+# Derived experiment artifacts not listed in README.md
+experiments/**/plots/
+experiments/**/*_estimator.joblib
+
+# Keep only the documented "full" feature bundles
+experiments/pulseppg_results/2026-03-18/pulseppg_features.npy
+experiments/pulseppg_results/2026-03-18/pulseppg_manifest.json
+experiments/pulseppg_results/2026-03-18/pulseppg_metadata.csv
+experiments/papagei_results/2026-03-18/papagei_features.npy
+experiments/papagei_results/2026-03-18/papagei_manifest.json
+experiments/papagei_results/2026-03-18/papagei_metadata.csv
+
+# Keep only the regression result directories documented in README.md
+experiments/pulseppg_results/2026-03-18/regression_linear/
+experiments/pulseppg_results/2026-03-18/regression_ridge/
+experiments/pulseppg_results/2026-03-23/regression_gradient_boosting/
+experiments/papagei_results/2026-03-18/regression_linear/
+experiments/papagei_results/2026-03-18/regression_ridge/
+experiments/papagei_results/2026-03-23/regression_gradient_boosting/

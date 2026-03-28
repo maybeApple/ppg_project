@@ -1,0 +1,103 @@
+﻿{
+  "project": "GalaxyPPG heart-rate estimation reproducibility protocol",
+  "environment": {
+    "python_version": "3.13.x",
+    "requirements_file": "requirements.txt"
+  },
+  "raw_dataset": {
+    "root": "data/raw/GalaxyPPG",
+    "notes": [
+      "The repository can reproduce the final downstream numbers from the included processed cache without raw data.",
+      "Raw data is only required if you want to rebuild the processed cache from scratch."
+    ]
+  },
+  "model_weights": {
+    "pulseppg": {
+      "download_url": "https://doi.org/10.5281/zenodo.17270930",
+      "expected_checkpoint_path": "external/pulseppg/pulseppg/experiments/out/pulseppg/checkpoint_best.pkl",
+      "notes": [
+        "Download the official PulsePPG weight package.",
+        "Extract or copy checkpoint_best.pkl to the expected path."
+      ]
+    },
+    "papagei": {
+      "download_url": "https://zenodo.org/records/13983110",
+      "expected_checkpoint_path": "external/papagei-foundation-model/weights/papagei_s.pt",
+      "notes": [
+        "Download the official PaPaGei-S checkpoint.",
+        "Place papagei_s.pt in the expected path."
+      ]
+    }
+  },
+  "preprocessing": {
+    "script": "python -m src.data.export_processed",
+    "split_config_path": "configs/galaxyppg_submission_split.json",
+    "reference_source": "hr",
+    "window_seconds": 10.0,
+    "stride_seconds": 2.0,
+    "label_aggregation": "median",
+    "participant_split_random_state": 42,
+    "timestamp_alignment": {
+      "polar_phone_timestamp_offset_ms": 32400000,
+      "method": "Polar phoneTimestamp is shifted by -9 hours to align with the Galaxy Watch/Event.csv Unix-millisecond axis."
+    },
+    "session_extraction": {
+      "method": "ENTER/EXIT pairs from Event.csv",
+      "fallback": "When Event.csv is missing and overlap exists, use one synthetic full_recording interval."
+    },
+    "nan_handling": {
+      "reference_interpolation": "reference_on_ppg uses NaN outside the valid source timestamp range; no edge extrapolation",
+      "metrics": "drop NaN label/prediction pairs before MAE/RMSE/coverage",
+      "rr_values": "null RR values are dropped before JSON export"
+    },
+    "window_filters": {
+      "use_valid_ppg_only": true,
+      "valid_ppg_status_values": [
+        0,
+        500
+      ],
+      "min_session_duration_seconds": 10.0,
+      "min_reference_samples_per_window": 1,
+      "min_ppg_coverage_fraction": 0.8,
+      "drop_rule": "drop windows that do not meet both the minimum PPG and reference-sample thresholds"
+    }
+  },
+  "embedding_extraction": {
+    "pulseppg": {
+      "script": "python -m src.models.pulseppg_feature",
+      "input_manifest": "data/processed/galaxyppg_hr_w10_s2_median_manifest.json",
+      "target_sampling_hz": 50,
+      "apply_bandpass": true,
+      "apply_zscore": true,
+      "batch_size": 128,
+      "device": "cpu",
+      "saved_feature_manifest": "experiments/pulseppg_results/2026-03-18/full/pulseppg_manifest.json"
+    },
+    "papagei": {
+      "script": "python -m src.models.papagei_feature",
+      "input_manifest": "data/processed/galaxyppg_hr_w10_s2_median_manifest.json",
+      "target_sampling_hz": 125,
+      "apply_bandpass": true,
+      "apply_zscore": true,
+      "batch_size": 128,
+      "device": "cpu",
+      "saved_feature_manifest": "experiments/papagei_results/2026-03-18/full/papagei_manifest.json"
+    }
+  },
+  "training_evaluation": {
+    "script": "python -m src.regression.train_regressor",
+    "evaluation_script": "python -m src.regression.plot_regression_results",
+    "random_state": 42,
+    "validation": {
+      "type": "GroupKFold",
+      "n_splits": 5,
+      "group_field": "participant_id"
+    },
+    "final_reported_best_model": {
+      "feature_manifest": "experiments/pulseppg_results/2026-03-18/full/pulseppg_manifest.json",
+      "regressor": "random_forest",
+      "reported_metrics": "experiments/pulseppg_results/2026-03-23/regression_random_forest/pulseppg_random_forest_metrics.json",
+      "reported_predictions": "experiments/pulseppg_results/2026-03-23/regression_random_forest/pulseppg_random_forest_predictions.csv"
+    }
+  }
+}
