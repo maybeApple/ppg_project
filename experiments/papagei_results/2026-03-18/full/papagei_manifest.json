@@ -9,10 +9,14 @@
   "manifest_path": "papagei_manifest.json",
   "source_windows_path": "../../../data/processed/windows/galaxyppg_hr_w10_s2_median_windows.jsonl.gz",
   "checkpoint_path": "../../../external/papagei-foundation-model/weights/papagei_s.pt",
-  "external_repo_root": "../../../external/papagei-foundation-model",
+  "external_repo_root": "../../../src/vendor/papagei_resnet.py",
   "processed_manifest_path": "../../../data/processed/galaxyppg_hr_w10_s2_median_manifest.json",
   "apply_bandpass": true,
   "apply_zscore": true,
   "batch_size": 128,
-  "device": "cpu"
+  "device": "cpu",
+  "model_code_strategy": "vendored_minimal_source",
+  "model_code_path": "../../../src/vendor/papagei_resnet.py",
+  "upstream_repository": "https://github.com/Nokia-Bell-Labs/papagei-foundation-model",
+  "upstream_commit": "0c537dad4d2850e15b724260de820dd68d77f0b0"
 }

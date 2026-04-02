@@ -6,8 +6,9 @@ import argparse
 import json
 from pathlib import Path
 
-from src.data import build_window_dataset, resolve_dataset_root, split_by_participant
+from src.data import build_window_dataset, list_participants, resolve_dataset_root, split_by_participant
 from src.data.cache import annotate_window_dataset, save_processed_dataset
+from src.data.splits import configured_participant_ids, load_fixed_split_config, resolve_split_config_path
 
 
 def parse_args() -> argparse.Namespace:
@@ -31,19 +32,37 @@ def main() -> None:
 
     args = parse_args()
     dataset_root = resolve_dataset_root(args.dataset_root)
+    split_config_path = resolve_split_config_path(args.split_config)
+    fixed_split = load_fixed_split_config(split_config_path) if split_config_path is not None else None
+    participant_ids = configured_participant_ids(fixed_split) if fixed_split is not None else None
+    if participant_ids is not None:
+        available_participants = set(list_participants(dataset_root))
+        missing_participants = sorted(set(participant_ids) - available_participants)
+        if missing_participants:
+            raise FileNotFoundError(
+                "The split config references participant folders that are missing from the raw dataset: "
+                f"{missing_participants}"
+            )
+
     windows = build_window_dataset(
         dataset_root=dataset_root,
+        participant_ids=participant_ids,
         reference_source=args.reference_source,
         window_seconds=args.window_seconds,
         stride_seconds=args.stride_seconds,
         label_aggregation=args.label_aggregation,
     )
-    split_config = load_split_config(args.split_config)
+    if windows.empty:
+        raise RuntimeError(
+            "Preprocessing produced zero windows. Check the raw dataset placement, expected folder structure, "
+            "timestamp alignment inputs, and filtering thresholds."
+        )
+
     _, _, train_participants, test_participants = split_by_participant(
         windows,
         test_size=args.test_size,
         random_state=args.random_state,
-        test_participants=split_config.get("test_participants"),
+        test_participants=None if fixed_split is None else fixed_split.test_participants,
     )
     annotated_windows = annotate_window_dataset(
         windows=windows,
@@ -61,20 +80,13 @@ def main() -> None:
         random_state=args.random_state,
         train_participants=train_participants,
         test_participants=test_participants,
+        split_config_path=None if fixed_split is None else fixed_split.split_config_path,
+        split_name=None if fixed_split is None else fixed_split.split_name,
+        validation_strategy=None if fixed_split is None else fixed_split.validation_strategy,
+        validation_folds=None if fixed_split is None else [fold.to_dict() for fold in fixed_split.validation_folds],
         output_root=args.output_root,
     )
     print(json.dumps(manifest.to_dict(), indent=2, ensure_ascii=False))
-
-
-def load_split_config(split_config_path: Path | None) -> dict[str, object]:
-    """Load a participant split config when one is provided."""
-
-    if split_config_path is None:
-        return {}
-    payload = json.loads(split_config_path.read_text(encoding="utf-8"))
-    if "test_participants" not in payload:
-        raise KeyError("Split config must contain a `test_participants` field.")
-    return payload
 
 
 if __name__ == "__main__":

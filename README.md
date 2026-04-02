@@ -1,16 +1,48 @@
 # PPG Heart Rate Estimation
 
-This repository targets heart-rate estimation on the `GalaxyPPG` dataset using:
+This repository reproduces heart-rate estimation on the `GalaxyPPG` dataset with:
 
-- Galaxy Watch PPG as input
-- Polar H10 HR / IBI as reference labels
-- classical baselines
-- two foundation models: `PulsePPG` and `PaPaGei`
+- raw input: Galaxy Watch `PPG.csv`
+- reference labels: Polar H10 `HR.csv` or `IBI.csv`
+- classical baselines: peak detection and spectral HR
+- foundation-model features: PulsePPG and PaPaGei
+- downstream regressors: linear, ridge, random forest, gradient boosting
 
-The repository is organized to be reproducible without manual code edits.  
-Only dataset placement and model-weight placement are external requirements, and both are documented below.
+The repository is intended to be runnable without manual code edits. The only external inputs are:
 
-## What Must Be In The Repository
+1. the raw `GalaxyPPG` dataset
+2. the official pretrained model checkpoints
+
+The minimal model-definition code required to load the checkpoints is already vendored inside this repository under `src/vendor/`.
+
+## Reproducibility status
+
+The repository now supports both:
+
+- end-to-end reproduction from raw `GalaxyPPG` data
+- shortest-path reproduction from the saved processed windows and saved feature caches
+
+The train/validation/test split is fixed by `configs/galaxyppg_submission_split.json`, and the training code now uses the saved validation-fold assignments instead of recomputing them ad hoc.
+
+## Environment setup
+
+Tested environment:
+
+- Python `3.13.9`
+- Windows
+- CPU execution
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+If you want GPU execution, replace the `torch` wheel with the one that matches your CUDA environment.
+
+## What is included in the repository
+
+Key repository contents:
 
 ```text
 ppg_project/
@@ -20,323 +52,381 @@ ppg_project/
 |   |-- galaxyppg_submission_split.json
 |   `-- submission_protocol.json
 |-- src/
-|   |-- __init__.py
-|   |-- data/
-|   |   |-- __init__.py
-|   |   |-- cache.py
-|   |   |-- export_processed.py
-|   |   |-- loader.py
-|   |   |-- preprocessing.py
-|   |   `-- windowing.py
 |   |-- baseline/
-|   |   |-- __init__.py
-|   |   |-- peak_detection.py
-|   |   |-- plot_baseline_results.py
-|   |   |-- run_baseline.py
-|   |   `-- spectral_hr.py
+|   |-- data/
 |   |-- models/
-|   |   |-- __init__.py
-|   |   |-- common.py
-|   |   |-- papagei_feature.py
-|   |   `-- pulseppg_feature.py
 |   |-- regression/
-|   |   |-- __init__.py
-|   |   |-- evaluate.py
-|   |   |-- plot_regression_results.py
-|   |   `-- train_regressor.py
-|   `-- utils/
-|       |-- __init__.py
-|       |-- generate_progress_report.py
-|       `-- metrics.py
+|   |-- utils/
+|   `-- vendor/
+|       |-- UPSTREAM.md
+|       |-- pulseppg_resnet1d.py
+|       |-- papagei_resnet.py
+|       `-- resnet1d_shared.py
 |-- data/
 |   |-- raw/
-|   |   |-- README.md
 |   |   `-- GalaxyPPG/
-|   |       `-- README.md
 |   |-- processed/
-|   |   |-- README.md
-|   |   |-- galaxyppg_hr_w10_s2_median_manifest.json
-|   |   |-- windows/
-|   |   |   `-- galaxyppg_hr_w10_s2_median_windows.jsonl.gz
-|   |   `-- labels/
-|   |       `-- galaxyppg_hr_w10_s2_median_labels.csv
 |   `-- summary/
-|       |-- README.md
-|       `-- galaxyppg_schema.md
 |-- external/
-|   |-- pulseppg/
-|   |   |-- LICENSE
-|   |   |-- README.md
-|   |   `-- pulseppg/
-|   |       |-- nets/
-|   |       |   `-- ResNet1D/
-|   |       |       `-- ResNet1D_Net.py
-|   |       `-- experiments/
-|   |           `-- out/
-|   |               `-- pulseppg/
-|   |                   `-- .gitkeep
-|   `-- papagei-foundation-model/
-|       |-- LICENSE
-|       |-- README.md
-|       |-- models/
-|       |   |-- __init__.py
-|       |   `-- resnet.py
-|       `-- weights/
-|           `-- .gitkeep
-|-- experiments/
-|   |-- baseline_results/
-|   |   `-- 2026-03-11/
-|   |       |-- peak_metrics.json
-|   |       |-- peak_predictions.csv
-|   |       |-- spectral_metrics.json
-|   |       `-- spectral_predictions.csv
-|   |-- pulseppg_results/
-|   |   |-- 2026-03-18/
-|   |   |   `-- full/
-|   |   |       |-- pulseppg_features.npy
-|   |   |       |-- pulseppg_manifest.json
-|   |   |       `-- pulseppg_metadata.csv
-|   |   `-- 2026-03-23/
-|   |       `-- regression_random_forest/
-|   |           |-- pulseppg_random_forest_metrics.json
-|   |           `-- pulseppg_random_forest_predictions.csv
-|   |-- papagei_results/
-|   |   |-- 2026-03-18/
-|   |   |   `-- full/
-|   |   |       |-- papagei_features.npy
-|   |   |       |-- papagei_manifest.json
-|   |   |       `-- papagei_metadata.csv
-|   |   `-- 2026-03-23/
-|   |       `-- regression_random_forest/
-|   |           |-- papagei_random_forest_metrics.json
-|   |           `-- papagei_random_forest_predictions.csv
-|   `-- reproduced_submission/
-|       |-- submission_run_summary.json
-|       |-- submission_run_summary.md
-|       |-- baseline_peak/
-|       |   |-- peak_metrics.json
-|       |   |-- peak_predictions.csv
-|       |   `-- peak_run_log.json
-|       `-- pulseppg_random_forest/
-|           |-- pulseppg_random_forest_metrics.json
-|           |-- pulseppg_random_forest_predictions.csv
-|           `-- pulseppg_random_forest_run_log.json
-`-- notebooks/
-    `-- exploration.ipynb
+|   `-- .gitkeep
+`-- experiments/
 ```
 
-## Environment Setup
+`external/` is intentionally kept almost empty in version control. It is the local checkpoint root where users place downloaded model weights at the documented paths.
 
-Exact package versions are stored in `requirements.txt`.
+## 1. How to obtain raw data
 
-Recommended Python version:
+The raw dataset is not bundled in this repository.
 
-- `Python 3.13.x`
+Use the official GalaxyPPG sources:
 
-Install:
+- official dataset archive: `https://doi.org/10.5281/zenodo.14635823`
+- supplementary code repository: `https://github.com/Kaist-ICLab/GalaxyPPG-Supplementary-Code`
+- Galaxy Watch logger repository: `https://github.com/Kaist-ICLab/GalaxyPPG-Logger`
 
-```bash
-pip install -r requirements.txt
-```
-
-If you need GPU acceleration, replace the `torch` package with the wheel that matches your CUDA environment.
-
-## Raw Dataset Placement
-
-If you want to rebuild preprocessing from raw data, place the raw `GalaxyPPG` files under:
+After download, extract the dataset so that the repository-local path is:
 
 ```text
 data/raw/GalaxyPPG/
 ```
 
-The repository already includes a reusable processed cache under `data/processed/`, so raw data is not required to reproduce the final downstream numbers.
+The preprocessing code expects `Meta.csv` directly inside `data/raw/GalaxyPPG/`.
 
-## Model Weights
+## 2. Exact expected GalaxyPPG raw-data folder structure
 
-The repository includes the exact expected weight directories, but not the large official checkpoint files themselves.
+This project only needs the files below for preprocessing and label generation:
 
-Download locations:
+```text
+data/raw/GalaxyPPG/
+|-- Meta.csv
+|-- P02/
+|   |-- Event.csv
+|   |-- GalaxyWatch/
+|   |   `-- PPG.csv
+|   `-- PolarH10/
+|       |-- HR.csv
+|       `-- IBI.csv
+|-- P03/
+|   |-- Event.csv
+|   |-- GalaxyWatch/
+|   |   `-- PPG.csv
+|   `-- PolarH10/
+|       |-- HR.csv
+|       `-- IBI.csv
+`-- ...
+```
 
-- `PulsePPG`: `https://doi.org/10.5281/zenodo.17270930`
-- `PaPaGei`: `https://zenodo.org/records/13983110`
+Notes:
 
-Place the files here:
+- `GalaxyWatch/PPG.csv` is required as model input.
+- `PolarH10/HR.csv` is the default reference label source.
+- `PolarH10/IBI.csv` is also supported.
+- `Event.csv` is used for `ENTER/EXIT` session boundaries.
+- The official dataset contains additional files such as `ACC.csv`, `ECG.csv`, `E4/*`, and `GalaxyWatch/HR.csv`; this repository does not need them for the main reported pipeline.
+- `P01` is excluded from the fixed split because the official raw release does not provide usable Galaxy Watch PPG plus event annotations for this project.
 
-- `PulsePPG` checkpoint:
-  `external/pulseppg/pulseppg/experiments/out/pulseppg/checkpoint_best.pkl`
-- `PaPaGei-S` checkpoint:
-  `external/papagei-foundation-model/weights/papagei_s.pt`
+## 3. How to obtain model weights
 
-No code changes are needed if you use these default paths.
+Only the pretrained checkpoint files are required. No extra upstream model-code checkout is needed at runtime.
 
-## Fixed Split And Reproducibility Metadata
+### PulsePPG checkpoint
 
-The repository includes two reproducibility config files:
+- source: official PulsePPG Zenodo record `https://doi.org/10.5281/zenodo.17270930`
+- expected filename: `checkpoint_best.pkl`
+- recommended placement after creating the directory locally:
+
+```text
+external/pulseppg/checkpoint_best.pkl
+```
+
+Backward-compatible legacy placement is also supported:
+
+```text
+external/pulseppg/pulseppg/experiments/out/pulseppg/checkpoint_best.pkl
+```
+
+### PaPaGei checkpoint
+
+- source: official PaPaGei Zenodo record `https://zenodo.org/records/13983110`
+- expected filename: `papagei_s.pt`
+- expected placement after creating the directory locally:
+
+```text
+external/papagei-foundation-model/weights/papagei_s.pt
+```
+
+## 4. How to obtain required external model code
+
+No extra external model repository checkout is required for feature extraction.
+
+This repository uses the "vendor the minimal required source files" option from the reproducibility checklist. The minimal checkpoint-compatible runtime code is vendored in:
+
+- `src/vendor/pulseppg_resnet1d.py`
+- `src/vendor/papagei_resnet.py`
+- `src/vendor/resnet1d_shared.py`
+
+Upstream provenance is pinned explicitly in:
+
+- `src/vendor/UPSTREAM.md`
+
+Vendored source provenance:
+
+- PulsePPG upstream repository: `https://github.com/maxxu05/pulseppg`
+- PulsePPG upstream commit: `716eaf9cf966e8f76436f2263872ef38b1f90166`
+- PulsePPG upstream source file used for vendoring: `pulseppg/nets/ResNet1D/ResNet1D_Net.py`
+- PaPaGei upstream repository: `https://github.com/Nokia-Bell-Labs/papagei-foundation-model`
+- PaPaGei upstream commit: `0c537dad4d2850e15b724260de820dd68d77f0b0`
+- PaPaGei upstream source file used for vendoring: `models/resnet.py`
+
+Because the minimal runtime source is already in `src/vendor/`, another user can clone this repository and run feature extraction without checking out any additional model repository. The only external requirement is downloading the official checkpoint files to the documented paths.
+
+## Fixed split and validation folds
+
+The repository ships a fully fixed split definition in:
 
 - `configs/galaxyppg_submission_split.json`
-- `configs/submission_protocol.json`
 
-They define:
+It defines:
 
 - exact train participants
 - exact test participants
-- deterministic validation folds used by `GroupKFold`
+- exact validation-fold participant assignments
 - random seed `42`
-- preprocessing rules
-- timestamp alignment details
-- NaN handling rules
-- exclusion rules
-- exact saved artifact paths used in the submission
 
-Important note on validation:
+The training code now uses the saved validation folds from this file instead of recomputing them dynamically.
 
-- there is no single fixed held-out validation set
-- model selection uses deterministic participant-level `GroupKFold(n_splits=5)` over the fixed training participants
-- the exact validation-participant IDs for all five folds are stored in `configs/galaxyppg_submission_split.json`
+## Preprocessing details
 
-## Preprocessing Details
-
-The preprocessing pipeline is implemented by:
+Implemented in:
 
 - `src/data/loader.py`
 - `src/data/preprocessing.py`
 - `src/data/windowing.py`
 - `src/data/export_processed.py`
 
-Covered behavior:
+Important preprocessing rules:
 
-- timestamp alignment:
-  Polar `phoneTimestamp` is shifted by `-9 hours` (`32400000 ms`)
-- session extraction:
-  `Event.csv` `ENTER/EXIT` pairs
-- windowing:
-  `10 s` windows with `2 s` stride
-- label generation:
-  median HR inside each window
-- NaN handling:
-  no edge extrapolation for interpolated reference values; metrics drop NaN pairs
-- resampling:
-  model input resampling is done in `src/models/common.py`
-- normalization:
-  optional z-score and band-pass preprocessing for foundation-model input
-- exclusion rules:
-  keep only valid PPG status values, require minimum PPG coverage and minimum reference samples
-- split:
-  participant-level split fixed by `configs/galaxyppg_submission_split.json`
+- Polar `phoneTimestamp` is shifted by `-9 hours` (`32400000 ms`) to align with Galaxy Watch timestamps.
+- Sessions are built from `Event.csv` `ENTER/EXIT` pairs.
+- Window length is `10 s`.
+- Stride is `2 s`.
+- Window label is `median(HR values inside the window)`.
+- Only valid PPG status values `{0, 500}` are kept.
+- Minimum PPG coverage per window is `0.8`.
+- Metrics drop `NaN` pairs instead of extrapolating edge values.
+
+Failure behavior:
+
+- preprocessing fails if the dataset root does not exist
+- preprocessing fails if `Meta.csv` is missing
+- preprocessing fails if no participant folders such as `P02/` are found
+- preprocessing fails if the split config references participant folders that are not present
+- preprocessing fails if zero windows are produced
+
+## 5. Preprocessing command
 
 Exact preprocessing command:
 
 ```bash
-python -m src.data.export_processed --split-config configs/galaxyppg_submission_split.json
+python -m src.data.export_processed --dataset-root data/raw/GalaxyPPG --split-config configs/galaxyppg_submission_split.json
 ```
 
-## Embedding Extraction Scripts
+Expected outputs:
 
-Separate scripts are provided for each model:
+- `data/processed/galaxyppg_hr_w10_s2_median_manifest.json`
+- `data/processed/windows/galaxyppg_hr_w10_s2_median_windows.jsonl.gz`
+- `data/processed/labels/galaxyppg_hr_w10_s2_median_labels.csv`
 
-- `python -m src.models.pulseppg_feature`
-- `python -m src.models.papagei_feature`
+The processed manifest also stores:
 
-Exact commands used for the saved full feature caches:
+- the fixed train participants
+- the fixed test participants
+- the fixed validation-fold assignments
+- the split-config path used to build the cache
+
+## 6. Reproducible baseline commands
+
+### Baseline from raw data
 
 ```bash
-python -m src.models.pulseppg_feature --output-dir experiments/pulseppg_results/2026-03-18/full --batch-size 128 --device cpu
-python -m src.models.papagei_feature --output-dir experiments/papagei_results/2026-03-18/full --batch-size 128 --device cpu
+python -m src.baseline.run_baseline --dataset-root data/raw/GalaxyPPG --split-config configs/galaxyppg_submission_split.json --method peak --output-dir experiments/reproduced_submission/baseline_peak_from_raw
 ```
 
-## Training And Evaluation Script
-
-The regressor training and evaluation entry point is:
+### Baseline from processed data
 
 ```bash
-python -m src.regression.train_regressor
+python -m src.baseline.run_baseline --processed-manifest data/processed/galaxyppg_hr_w10_s2_median_manifest.json --method peak --output-dir experiments/reproduced_submission/baseline_peak
 ```
 
-Plot generation is handled by:
+The processed-data command is the shortest reproducible baseline path because it reuses the saved split labels in the manifest and does not depend on re-running raw preprocessing.
+
+## 7. Embedding extraction command for PulsePPG
 
 ```bash
-python -m src.regression.plot_regression_results
+python -m src.models.pulseppg_feature --manifest-path data/processed/galaxyppg_hr_w10_s2_median_manifest.json --output-dir experiments/pulseppg_results/2026-03-18/full --batch-size 128 --device cpu
 ```
 
-## Command Order
+Expected outputs:
 
-For a full rerun from raw data and official model weights:
+- `experiments/pulseppg_results/2026-03-18/full/pulseppg_features.npy`
+- `experiments/pulseppg_results/2026-03-18/full/pulseppg_metadata.csv`
+- `experiments/pulseppg_results/2026-03-18/full/pulseppg_manifest.json`
 
-1. Install the environment:
+## 8. Embedding extraction command for PaPaGei
 
 ```bash
-pip install -r requirements.txt
+python -m src.models.papagei_feature --manifest-path data/processed/galaxyppg_hr_w10_s2_median_manifest.json --output-dir experiments/papagei_results/2026-03-18/full --batch-size 128 --device cpu
 ```
 
-2. Put raw `GalaxyPPG` under `data/raw/GalaxyPPG/`
+Expected outputs:
 
-3. Download and place the model weights in the documented default paths
+- `experiments/papagei_results/2026-03-18/full/papagei_features.npy`
+- `experiments/papagei_results/2026-03-18/full/papagei_metadata.csv`
+- `experiments/papagei_results/2026-03-18/full/papagei_manifest.json`
 
-4. Rebuild processed data:
+## 9. Training and evaluation commands
+
+### Train a regressor
+
+Example: PulsePPG + random forest
 
 ```bash
-python -m src.data.export_processed --split-config configs/galaxyppg_submission_split.json
+python -m src.regression.train_regressor --feature-manifest experiments/pulseppg_results/2026-03-18/full/pulseppg_manifest.json --regressor random_forest --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/pulseppg_results/2026-03-23/regression_random_forest
 ```
 
-5. Extract embeddings:
+Example: PaPaGei + ridge
 
 ```bash
-python -m src.models.pulseppg_feature --output-dir experiments/pulseppg_results/2026-03-18/full --batch-size 128 --device cpu
-python -m src.models.papagei_feature --output-dir experiments/papagei_results/2026-03-18/full --batch-size 128 --device cpu
+python -m src.regression.train_regressor --feature-manifest experiments/papagei_results/2026-03-18/full/papagei_manifest.json --regressor ridge --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/papagei_results/2026-03-18/regression_ridge
 ```
 
-6. Train and evaluate regressors:
+Supported regressors:
+
+- `linear`
+- `ridge`
+- `random_forest`
+- `gradient_boosting`
+
+### Generate evaluation plots for a saved regression run
 
 ```bash
-python -m src.regression.train_regressor --feature-manifest experiments/pulseppg_results/2026-03-18/full/pulseppg_manifest.json --regressor random_forest --random-state 42 --output-dir experiments/reproduced_submission/pulseppg_random_forest
-python -m src.regression.train_regressor --feature-manifest experiments/papagei_results/2026-03-18/full/papagei_manifest.json --regressor random_forest --random-state 42 --output-dir experiments/reproduced_submission/papagei_random_forest
+python -m src.regression.plot_regression_results --result-dir experiments/pulseppg_results/2026-03-23/regression_random_forest
 ```
 
-7. Optionally generate plots:
+### Generate evaluation plots for a saved baseline run
 
 ```bash
-python -m src.regression.plot_regression_results --result-dir experiments/reproduced_submission/pulseppg_random_forest
-python -m src.regression.plot_regression_results --result-dir experiments/reproduced_submission/papagei_random_forest
+python -m src.baseline.plot_baseline_results --result-dir experiments/baseline_results/2026-03-11
 ```
 
-## Exact Command That Reproduces The Final Best Number
+## 10. Exact command that reproduces the final reported number
 
-The best submission number is `PulsePPG + Random Forest`.
+The best reported result is `PulsePPG + Random Forest`.
 
-Because the repository already includes the exact full PulsePPG embedding cache, the shortest exact reproduction command is:
+Shortest exact reproduction command from saved feature caches:
 
 ```bash
-python -m src.regression.train_regressor --feature-manifest experiments/pulseppg_results/2026-03-18/full/pulseppg_manifest.json --regressor random_forest --random-state 42 --output-dir experiments/reproduced_submission/pulseppg_random_forest
+python -m src.regression.train_regressor --feature-manifest experiments/pulseppg_results/2026-03-18/full/pulseppg_manifest.json --regressor random_forest --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/reproduced_submission/pulseppg_random_forest
 ```
 
-Expected reproduced metrics:
+Expected metrics:
 
 - `MAE = 7.286407769380653`
 - `RMSE = 11.30392115001437`
 
-The reproduced outputs are saved to:
+Expected outputs:
 
 - `experiments/reproduced_submission/pulseppg_random_forest/pulseppg_random_forest_metrics.json`
 - `experiments/reproduced_submission/pulseppg_random_forest/pulseppg_random_forest_predictions.csv`
 - `experiments/reproduced_submission/pulseppg_random_forest/pulseppg_random_forest_run_log.json`
 
-## Saved Logs, Metrics, And Predictions
+## Full end-to-end command order
+
+1. Install the environment.
+
+```bash
+pip install -r requirements.txt
+```
+
+2. Download and extract `GalaxyPPG` to `data/raw/GalaxyPPG/`.
+
+3. Create the local checkpoint folders and place the official checkpoints:
+
+```text
+external/pulseppg/checkpoint_best.pkl
+external/papagei-foundation-model/weights/papagei_s.pt
+```
+
+4. Preprocess the raw dataset.
+
+```bash
+python -m src.data.export_processed --dataset-root data/raw/GalaxyPPG --split-config configs/galaxyppg_submission_split.json
+```
+
+5. Extract PulsePPG embeddings.
+
+```bash
+python -m src.models.pulseppg_feature --manifest-path data/processed/galaxyppg_hr_w10_s2_median_manifest.json --output-dir experiments/pulseppg_results/2026-03-18/full --batch-size 128 --device cpu
+```
+
+6. Extract PaPaGei embeddings.
+
+```bash
+python -m src.models.papagei_feature --manifest-path data/processed/galaxyppg_hr_w10_s2_median_manifest.json --output-dir experiments/papagei_results/2026-03-18/full --batch-size 128 --device cpu
+```
+
+7. Train downstream regressors.
+
+```bash
+python -m src.regression.train_regressor --feature-manifest experiments/pulseppg_results/2026-03-18/full/pulseppg_manifest.json --regressor linear --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/pulseppg_results/2026-03-18/regression_linear
+python -m src.regression.train_regressor --feature-manifest experiments/pulseppg_results/2026-03-18/full/pulseppg_manifest.json --regressor ridge --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/pulseppg_results/2026-03-18/regression_ridge
+python -m src.regression.train_regressor --feature-manifest experiments/pulseppg_results/2026-03-18/full/pulseppg_manifest.json --regressor gradient_boosting --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/pulseppg_results/2026-03-23/regression_gradient_boosting
+python -m src.regression.train_regressor --feature-manifest experiments/pulseppg_results/2026-03-18/full/pulseppg_manifest.json --regressor random_forest --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/pulseppg_results/2026-03-23/regression_random_forest
+python -m src.regression.train_regressor --feature-manifest experiments/papagei_results/2026-03-18/full/papagei_manifest.json --regressor linear --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/papagei_results/2026-03-18/regression_linear
+python -m src.regression.train_regressor --feature-manifest experiments/papagei_results/2026-03-18/full/papagei_manifest.json --regressor ridge --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/papagei_results/2026-03-18/regression_ridge
+python -m src.regression.train_regressor --feature-manifest experiments/papagei_results/2026-03-18/full/papagei_manifest.json --regressor gradient_boosting --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/papagei_results/2026-03-23/regression_gradient_boosting
+python -m src.regression.train_regressor --feature-manifest experiments/papagei_results/2026-03-18/full/papagei_manifest.json --regressor random_forest --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/papagei_results/2026-03-23/regression_random_forest
+```
+
+8. Optionally regenerate plots.
+
+```bash
+python -m src.baseline.plot_baseline_results --result-dir experiments/baseline_results/2026-03-11
+python -m src.regression.plot_regression_results --result-dir experiments/pulseppg_results/2026-03-23/regression_random_forest
+python -m src.regression.plot_regression_results --result-dir experiments/papagei_results/2026-03-23/regression_random_forest
+```
+
+## Saved artifacts included in the repository
 
 The repository includes:
 
-- saved evaluation metrics in JSON
-- saved predictions in CSV
-- run logs in JSON for reproduced submission runs
-- a compact command summary in:
-  `experiments/reproduced_submission/submission_run_summary.md`
+- processed manifest, window cache, and label CSV
+- full PulsePPG feature bundle
+- full PaPaGei feature bundle
+- baseline metrics and predictions
+- regression metrics and predictions for all reported experiments
+- run logs for all reported experiments
+- estimator artifacts and plot directories for the reported experiments
+- the vendored minimal model source needed for PulsePPG and PaPaGei feature extraction
+- summary indexes:
+  - `experiments/reported_results_summary.md`
+  - `experiments/reported_results_summary.json`
+  - `experiments/reproduced_submission/submission_run_summary.md`
+  - `experiments/reproduced_submission/submission_run_summary.json`
 
-Key files:
+## Reported experiment summary
 
-- baseline reproduced log:
-  `experiments/reproduced_submission/baseline_peak/peak_run_log.json`
-- best-model reproduced log:
-  `experiments/reproduced_submission/pulseppg_random_forest/pulseppg_random_forest_run_log.json`
-- baseline reproduced predictions:
-  `experiments/reproduced_submission/baseline_peak/peak_predictions.csv`
-- best-model reproduced predictions:
-  `experiments/reproduced_submission/pulseppg_random_forest/pulseppg_random_forest_predictions.csv`
+For the bundled experiment inventory and metric table, see:
+
+- `experiments/reported_results_summary.md`
+- `experiments/reported_results_summary.json`
+
+## Requirements for reproducible reruns
+
+You should not need to edit code if:
+
+- the raw dataset is placed under `data/raw/GalaxyPPG/`
+- the official checkpoints are placed at the documented paths
+- you use the commands above
+
+If you change dataset paths or checkpoint paths, pass them through the documented CLI arguments instead of editing source files.

@@ -1,17 +1,17 @@
-﻿{
+{
   "protocol_config": "configs/submission_protocol.json",
   "split_config": "configs/galaxyppg_submission_split.json",
   "reproduced_runs": [
     {
       "name": "baseline_peak",
-      "command": "python -m src.baseline.run_baseline --method peak --output-dir experiments/reproduced_submission/baseline_peak",
+      "command": "python -m src.baseline.run_baseline --processed-manifest data/processed/galaxyppg_hr_w10_s2_median_manifest.json --method peak --output-dir experiments/reproduced_submission/baseline_peak",
       "metrics_path": "experiments/reproduced_submission/baseline_peak/peak_metrics.json",
       "predictions_path": "experiments/reproduced_submission/baseline_peak/peak_predictions.csv",
       "run_log_path": "experiments/reproduced_submission/baseline_peak/peak_run_log.json"
     },
     {
       "name": "pulseppg_random_forest",
-      "command": "python -m src.regression.train_regressor --feature-manifest experiments/pulseppg_results/2026-03-18/full/pulseppg_manifest.json --regressor random_forest --random-state 42 --output-dir experiments/reproduced_submission/pulseppg_random_forest",
+      "command": "python -m src.regression.train_regressor --feature-manifest experiments/pulseppg_results/2026-03-18/full/pulseppg_manifest.json --regressor random_forest --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/reproduced_submission/pulseppg_random_forest",
       "metrics_path": "experiments/reproduced_submission/pulseppg_random_forest/pulseppg_random_forest_metrics.json",
       "predictions_path": "experiments/reproduced_submission/pulseppg_random_forest/pulseppg_random_forest_predictions.csv",
       "run_log_path": "experiments/reproduced_submission/pulseppg_random_forest/pulseppg_random_forest_run_log.json"
@@ -23,5 +23,7 @@
       "metrics_path": "experiments/papagei_results/2026-03-23/regression_random_forest/papagei_random_forest_metrics.json",
       "predictions_path": "experiments/papagei_results/2026-03-23/regression_random_forest/papagei_random_forest_predictions.csv"
     }
-  ]
+  ],
+  "reported_results_summary_markdown": "experiments/reported_results_summary.md",
+  "reported_results_summary_json": "experiments/reported_results_summary.json"
 }

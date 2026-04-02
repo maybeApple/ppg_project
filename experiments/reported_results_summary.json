@@ -1,0 +1,147 @@
+{
+  "split_config": "configs/galaxyppg_submission_split.json",
+  "processed_manifest": "data/processed/galaxyppg_hr_w10_s2_median_manifest.json",
+  "experiments": [
+    {
+      "kind": "baseline",
+      "name": "peak",
+      "result_dir": "experiments/baseline_results/2026-03-11",
+      "command": "python -m src.baseline.run_baseline --processed-manifest data/processed/galaxyppg_hr_w10_s2_median_manifest.json --method peak --output-dir experiments/baseline_results/2026-03-11",
+      "metrics_path": "experiments/baseline_results/2026-03-11/peak_metrics.json",
+      "predictions_path": "experiments/baseline_results/2026-03-11/peak_predictions.csv",
+      "run_log_path": "experiments/baseline_results/2026-03-11/peak_run_log.json",
+      "mae": 7.641879292148965,
+      "rmse": 15.84782749791325
+    },
+    {
+      "kind": "baseline",
+      "name": "spectral",
+      "result_dir": "experiments/baseline_results/2026-03-11",
+      "command": "python -m src.baseline.run_baseline --processed-manifest data/processed/galaxyppg_hr_w10_s2_median_manifest.json --method spectral --output-dir experiments/baseline_results/2026-03-11",
+      "metrics_path": "experiments/baseline_results/2026-03-11/spectral_metrics.json",
+      "predictions_path": "experiments/baseline_results/2026-03-11/spectral_predictions.csv",
+      "run_log_path": "experiments/baseline_results/2026-03-11/spectral_run_log.json",
+      "mae": 18.733783252522606,
+      "rmse": 29.436619688615348
+    },
+    {
+      "kind": "baseline",
+      "name": "peak",
+      "result_dir": "experiments/reproduced_submission/baseline_peak",
+      "command": "python -m src.baseline.run_baseline --processed-manifest data/processed/galaxyppg_hr_w10_s2_median_manifest.json --method peak --output-dir experiments/reproduced_submission/baseline_peak",
+      "metrics_path": "experiments/reproduced_submission/baseline_peak/peak_metrics.json",
+      "predictions_path": "experiments/reproduced_submission/baseline_peak/peak_predictions.csv",
+      "run_log_path": "experiments/reproduced_submission/baseline_peak/peak_run_log.json",
+      "mae": 7.641879292148965,
+      "rmse": 15.84782749791325
+    },
+    {
+      "kind": "regression",
+      "name": "pulseppg_linear",
+      "result_dir": "experiments/pulseppg_results/2026-03-18/regression_linear",
+      "command": "python -m src.regression.train_regressor --feature-manifest experiments/pulseppg_results/2026-03-18/full/pulseppg_manifest.json --regressor linear --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/pulseppg_results/2026-03-18/regression_linear",
+      "metrics_path": "experiments/pulseppg_results/2026-03-18/regression_linear/pulseppg_linear_metrics.json",
+      "predictions_path": "experiments/pulseppg_results/2026-03-18/regression_linear/pulseppg_linear_predictions.csv",
+      "estimator_path": "experiments/pulseppg_results/2026-03-18/regression_linear/pulseppg_linear_estimator.joblib",
+      "run_log_path": "experiments/pulseppg_results/2026-03-18/regression_linear/pulseppg_linear_run_log.json",
+      "mae": 7.9485639317947046,
+      "rmse": 12.14320500249536
+    },
+    {
+      "kind": "regression",
+      "name": "pulseppg_ridge",
+      "result_dir": "experiments/pulseppg_results/2026-03-18/regression_ridge",
+      "command": "python -m src.regression.train_regressor --feature-manifest experiments/pulseppg_results/2026-03-18/full/pulseppg_manifest.json --regressor ridge --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/pulseppg_results/2026-03-18/regression_ridge",
+      "metrics_path": "experiments/pulseppg_results/2026-03-18/regression_ridge/pulseppg_ridge_metrics.json",
+      "predictions_path": "experiments/pulseppg_results/2026-03-18/regression_ridge/pulseppg_ridge_predictions.csv",
+      "estimator_path": "experiments/pulseppg_results/2026-03-18/regression_ridge/pulseppg_ridge_estimator.joblib",
+      "run_log_path": "experiments/pulseppg_results/2026-03-18/regression_ridge/pulseppg_ridge_run_log.json",
+      "mae": 7.871293132543532,
+      "rmse": 12.080185814093264
+    },
+    {
+      "kind": "regression",
+      "name": "pulseppg_gradient_boosting",
+      "result_dir": "experiments/pulseppg_results/2026-03-23/regression_gradient_boosting",
+      "command": "python -m src.regression.train_regressor --feature-manifest experiments/pulseppg_results/2026-03-18/full/pulseppg_manifest.json --regressor gradient_boosting --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/pulseppg_results/2026-03-23/regression_gradient_boosting",
+      "metrics_path": "experiments/pulseppg_results/2026-03-23/regression_gradient_boosting/pulseppg_gradient_boosting_metrics.json",
+      "predictions_path": "experiments/pulseppg_results/2026-03-23/regression_gradient_boosting/pulseppg_gradient_boosting_predictions.csv",
+      "estimator_path": "experiments/pulseppg_results/2026-03-23/regression_gradient_boosting/pulseppg_gradient_boosting_estimator.joblib",
+      "run_log_path": "experiments/pulseppg_results/2026-03-23/regression_gradient_boosting/pulseppg_gradient_boosting_run_log.json",
+      "mae": 7.492755483825166,
+      "rmse": 11.809258434075156
+    },
+    {
+      "kind": "regression",
+      "name": "pulseppg_random_forest",
+      "result_dir": "experiments/pulseppg_results/2026-03-23/regression_random_forest",
+      "command": "python -m src.regression.train_regressor --feature-manifest experiments/pulseppg_results/2026-03-18/full/pulseppg_manifest.json --regressor random_forest --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/pulseppg_results/2026-03-23/regression_random_forest",
+      "metrics_path": "experiments/pulseppg_results/2026-03-23/regression_random_forest/pulseppg_random_forest_metrics.json",
+      "predictions_path": "experiments/pulseppg_results/2026-03-23/regression_random_forest/pulseppg_random_forest_predictions.csv",
+      "estimator_path": "experiments/pulseppg_results/2026-03-23/regression_random_forest/pulseppg_random_forest_estimator.joblib",
+      "run_log_path": "experiments/pulseppg_results/2026-03-23/regression_random_forest/pulseppg_random_forest_run_log.json",
+      "mae": 7.286407769380653,
+      "rmse": 11.30392115001437
+    },
+    {
+      "kind": "regression",
+      "name": "pulseppg_random_forest",
+      "result_dir": "experiments/reproduced_submission/pulseppg_random_forest",
+      "command": "python -m src.regression.train_regressor --feature-manifest experiments/pulseppg_results/2026-03-18/full/pulseppg_manifest.json --regressor random_forest --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/reproduced_submission/pulseppg_random_forest",
+      "metrics_path": "experiments/reproduced_submission/pulseppg_random_forest/pulseppg_random_forest_metrics.json",
+      "predictions_path": "experiments/reproduced_submission/pulseppg_random_forest/pulseppg_random_forest_predictions.csv",
+      "estimator_path": "experiments/reproduced_submission/pulseppg_random_forest/pulseppg_random_forest_estimator.joblib",
+      "run_log_path": "experiments/reproduced_submission/pulseppg_random_forest/pulseppg_random_forest_run_log.json",
+      "mae": 7.286407769380653,
+      "rmse": 11.30392115001437
+    },
+    {
+      "kind": "regression",
+      "name": "papagei_linear",
+      "result_dir": "experiments/papagei_results/2026-03-18/regression_linear",
+      "command": "python -m src.regression.train_regressor --feature-manifest experiments/papagei_results/2026-03-18/full/papagei_manifest.json --regressor linear --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/papagei_results/2026-03-18/regression_linear",
+      "metrics_path": "experiments/papagei_results/2026-03-18/regression_linear/papagei_linear_metrics.json",
+      "predictions_path": "experiments/papagei_results/2026-03-18/regression_linear/papagei_linear_predictions.csv",
+      "estimator_path": "experiments/papagei_results/2026-03-18/regression_linear/papagei_linear_estimator.joblib",
+      "run_log_path": "experiments/papagei_results/2026-03-18/regression_linear/papagei_linear_run_log.json",
+      "mae": 11.241105289231776,
+      "rmse": 17.039751843148565
+    },
+    {
+      "kind": "regression",
+      "name": "papagei_ridge",
+      "result_dir": "experiments/papagei_results/2026-03-18/regression_ridge",
+      "command": "python -m src.regression.train_regressor --feature-manifest experiments/papagei_results/2026-03-18/full/papagei_manifest.json --regressor ridge --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/papagei_results/2026-03-18/regression_ridge",
+      "metrics_path": "experiments/papagei_results/2026-03-18/regression_ridge/papagei_ridge_metrics.json",
+      "predictions_path": "experiments/papagei_results/2026-03-18/regression_ridge/papagei_ridge_predictions.csv",
+      "estimator_path": "experiments/papagei_results/2026-03-18/regression_ridge/papagei_ridge_estimator.joblib",
+      "run_log_path": "experiments/papagei_results/2026-03-18/regression_ridge/papagei_ridge_run_log.json",
+      "mae": 11.05730811653842,
+      "rmse": 16.529640901624646
+    },
+    {
+      "kind": "regression",
+      "name": "papagei_gradient_boosting",
+      "result_dir": "experiments/papagei_results/2026-03-23/regression_gradient_boosting",
+      "command": "python -m src.regression.train_regressor --feature-manifest experiments/papagei_results/2026-03-18/full/papagei_manifest.json --regressor gradient_boosting --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/papagei_results/2026-03-23/regression_gradient_boosting",
+      "metrics_path": "experiments/papagei_results/2026-03-23/regression_gradient_boosting/papagei_gradient_boosting_metrics.json",
+      "predictions_path": "experiments/papagei_results/2026-03-23/regression_gradient_boosting/papagei_gradient_boosting_predictions.csv",
+      "estimator_path": "experiments/papagei_results/2026-03-23/regression_gradient_boosting/papagei_gradient_boosting_estimator.joblib",
+      "run_log_path": "experiments/papagei_results/2026-03-23/regression_gradient_boosting/papagei_gradient_boosting_run_log.json",
+      "mae": 11.909231901504631,
+      "rmse": 16.137550488815457
+    },
+    {
+      "kind": "regression",
+      "name": "papagei_random_forest",
+      "result_dir": "experiments/papagei_results/2026-03-23/regression_random_forest",
+      "command": "python -m src.regression.train_regressor --feature-manifest experiments/papagei_results/2026-03-18/full/papagei_manifest.json --regressor random_forest --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/papagei_results/2026-03-23/regression_random_forest",
+      "metrics_path": "experiments/papagei_results/2026-03-23/regression_random_forest/papagei_random_forest_metrics.json",
+      "predictions_path": "experiments/papagei_results/2026-03-23/regression_random_forest/papagei_random_forest_predictions.csv",
+      "estimator_path": "experiments/papagei_results/2026-03-23/regression_random_forest/papagei_random_forest_estimator.joblib",
+      "run_log_path": "experiments/papagei_results/2026-03-23/regression_random_forest/papagei_random_forest_run_log.json",
+      "mae": 11.53253200768708,
+      "rmse": 15.724710089294382
+    }
+  ]
+}

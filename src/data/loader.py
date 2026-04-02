@@ -34,6 +34,12 @@ def resolve_dataset_root(dataset_root: str | Path | None = None) -> Path:
     root = Path(dataset_root) if dataset_root is not None else default_dataset_root()
     if not root.exists():
         raise FileNotFoundError(f"GalaxyPPG dataset root does not exist: {root}")
+    metadata_path = root / "Meta.csv"
+    if not metadata_path.exists():
+        raise FileNotFoundError(
+            "GalaxyPPG dataset root is missing `Meta.csv`. "
+            f"Expected structure like `{root}/Meta.csv` plus participant folders `P02/`, `P03/`, ..."
+        )
     return root
 
 
@@ -41,7 +47,13 @@ def list_participants(dataset_root: str | Path | None = None) -> list[str]:
     """Return all participant IDs present in the dataset."""
 
     root = resolve_dataset_root(dataset_root)
-    return sorted(path.name for path in root.iterdir() if path.is_dir() and path.name.startswith("P"))
+    participants = sorted(path.name for path in root.iterdir() if path.is_dir() and path.name.startswith("P"))
+    if not participants:
+        raise FileNotFoundError(
+            "No participant folders were found under the GalaxyPPG dataset root. "
+            f"Expected folders like `{root}/P02`, `{root}/P03`, ..."
+        )
+    return participants
 
 
 def load_metadata(dataset_root: str | Path | None = None) -> pd.DataFrame:

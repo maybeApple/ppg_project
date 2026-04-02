@@ -37,5 +37,152 @@
   "num_valid_predictions": 7631,
   "coverage": 1.0,
   "mae": 18.733783252522606,
-  "rmse": 29.436619688615348
+  "rmse": 29.436619688615348,
+  "split_config_path": "configs/galaxyppg_submission_split.json",
+  "split_name": "galaxyppg_submission_fixed_split",
+  "validation_strategy": {
+    "type": "GroupKFold",
+    "n_splits": 5,
+    "shuffle": false,
+    "group_field": "participant_id",
+    "note": "There is no single fixed validation set. Validation uses deterministic participant-level GroupKFold over the fixed training participants."
+  },
+  "validation_folds": [
+    {
+      "fold": 1,
+      "train_participants": [
+        "P02",
+        "P03",
+        "P05",
+        "P06",
+        "P08",
+        "P10",
+        "P11",
+        "P12",
+        "P13",
+        "P14",
+        "P15",
+        "P21",
+        "P22",
+        "P23",
+        "P24"
+      ],
+      "validation_participants": [
+        "P09",
+        "P19",
+        "P20"
+      ],
+      "num_train_windows": 22887,
+      "num_validation_windows": 4640
+    },
+    {
+      "fold": 2,
+      "train_participants": [
+        "P02",
+        "P03",
+        "P05",
+        "P06",
+        "P09",
+        "P10",
+        "P11",
+        "P12",
+        "P13",
+        "P14",
+        "P19",
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "validation_participants": [
+        "P08",
+        "P15",
+        "P24"
+      ],
+      "num_train_windows": 22890,
+      "num_validation_windows": 4637
+    },
+    {
+      "fold": 3,
+      "train_participants": [
+        "P02",
+        "P05",
+        "P06",
+        "P08",
+        "P09",
+        "P11",
+        "P12",
+        "P15",
+        "P19",
+        "P20",
+        "P21",
+        "P22",
+        "P23",
+        "P24"
+      ],
+      "validation_participants": [
+        "P03",
+        "P10",
+        "P13",
+        "P14"
+      ],
+      "num_train_windows": 21460,
+      "num_validation_windows": 6067
+    },
+    {
+      "fold": 4,
+      "train_participants": [
+        "P03",
+        "P06",
+        "P08",
+        "P09",
+        "P10",
+        "P11",
+        "P13",
+        "P14",
+        "P15",
+        "P19",
+        "P20",
+        "P22",
+        "P23",
+        "P24"
+      ],
+      "validation_participants": [
+        "P02",
+        "P05",
+        "P12",
+        "P21"
+      ],
+      "num_train_windows": 21433,
+      "num_validation_windows": 6094
+    },
+    {
+      "fold": 5,
+      "train_participants": [
+        "P02",
+        "P03",
+        "P05",
+        "P08",
+        "P09",
+        "P10",
+        "P12",
+        "P13",
+        "P14",
+        "P15",
+        "P19",
+        "P20",
+        "P21",
+        "P24"
+      ],
+      "validation_participants": [
+        "P06",
+        "P11",
+        "P22",
+        "P23"
+      ],
+      "num_train_windows": 21438,
+      "num_validation_windows": 6089
+    }
+  ],
+  "source_processed_manifest_path": "data/processed/galaxyppg_hr_w10_s2_median_manifest.json"
 }

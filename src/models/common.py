@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 from scipy import signal
 
-from src.data import load_processed_windows
+from src.data import load_processed_manifest, load_processed_windows
 from src.data.preprocessing import estimate_sampling_rate_hz
 
 
@@ -48,7 +48,7 @@ class EmbeddingExportSummary:
 
 
 def default_external_root() -> Path:
-    """Return the repository-local folder that stores cloned third-party code."""
+    """Return the repository-local folder that stores downloaded external checkpoints."""
 
     return Path(__file__).resolve().parents[2] / "external"
 
@@ -57,10 +57,7 @@ def load_windows_from_manifest(manifest_path: str | Path | None = None) -> tuple
     """Load persisted processed windows from a manifest JSON file."""
 
     resolved_manifest = Path(manifest_path) if manifest_path is not None else DEFAULT_PROCESSED_MANIFEST
-    manifest = json.loads(resolved_manifest.read_text(encoding="utf-8"))
-    manifest["dataset_root"] = str(_resolve_manifest_path(resolved_manifest, manifest["dataset_root"]))
-    manifest["labels_path"] = str(_resolve_manifest_path(resolved_manifest, manifest["labels_path"]))
-    manifest["windows_path"] = str(_resolve_manifest_path(resolved_manifest, manifest["windows_path"]))
+    manifest = load_processed_manifest(resolved_manifest)
     windows = load_processed_windows(manifest["windows_path"])
     return windows, manifest
 

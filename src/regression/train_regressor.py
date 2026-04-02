@@ -18,6 +18,15 @@ from sklearn.model_selection import GridSearchCV, GroupKFold
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
+from src.data import (
+    build_fixed_validation_splits,
+    default_split_config_path,
+    describe_validation_folds,
+    load_fixed_split_config,
+    load_processed_manifest,
+    resolve_manifest_path,
+    resolve_split_config_path,
+)
 from src.regression.evaluate import evaluate_prediction_frame
 
 
@@ -57,6 +66,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--output-dir", type=Path, default=None)
     parser.add_argument("--random-state", type=int, default=42)
+    parser.add_argument("--split-config", type=Path, default=None)
     return parser.parse_args()
 
 
@@ -99,7 +109,7 @@ def split_train_test(
 def build_regressor_search(
     regressor_name: str,
     random_state: int,
-    n_splits: int,
+    cv_splits: object,
 ) -> GridSearchCV | Pipeline:
     """Construct a regressor or tuned search object."""
 
@@ -121,7 +131,7 @@ def build_regressor_search(
         return GridSearchCV(
             estimator=pipeline,
             param_grid={"regressor__alpha": [0.1, 1.0, 10.0, 100.0]},
-            cv=GroupKFold(n_splits=n_splits),
+            cv=cv_splits,
             scoring="neg_mean_squared_error",
             n_jobs=1,
             refit=True,
@@ -147,7 +157,7 @@ def build_regressor_search(
                 "regressor__max_depth": [16],
                 "regressor__min_samples_leaf": [1, 5],
             },
-            cv=GroupKFold(n_splits=n_splits),
+            cv=cv_splits,
             scoring="neg_mean_squared_error",
             n_jobs=1,
             refit=True,
@@ -169,7 +179,7 @@ def build_regressor_search(
                 "regressor__learning_rate": [0.05, 0.1],
                 "regressor__max_depth": [2],
             },
-            cv=GroupKFold(n_splits=n_splits),
+            cv=cv_splits,
             scoring="neg_mean_squared_error",
             n_jobs=1,
             refit=True,
@@ -185,18 +195,21 @@ def train_and_predict(
     train_groups: np.ndarray,
     regressor_name: str,
     random_state: int,
+    cv_splits: list[tuple[np.ndarray, np.ndarray]],
+    cv_fold_assignments: list[dict[str, object]],
+    split_config_path: str | None,
+    split_name: str | None,
+    cv_strategy: str,
 ) -> tuple[np.ndarray, object, dict[str, object]]:
     """Train a regressor and return test predictions plus fit metadata."""
 
-    n_groups = int(pd.Series(train_groups).nunique())
-    n_splits = min(5, n_groups)
-    if n_splits < 2:
+    if len(cv_splits) < 2:
         raise ValueError("At least two distinct training participants are required for grouped validation.")
 
     estimator = build_regressor_search(
         regressor_name=regressor_name,
         random_state=random_state,
-        n_splits=n_splits,
+        cv_splits=cv_splits,
     )
 
     if isinstance(estimator, GridSearchCV):
@@ -205,16 +218,20 @@ def train_and_predict(
         fit_metadata = {
             "cv_best_score": float(estimator.best_score_),
             "best_params": estimator.best_params_,
-            "cv_n_splits": n_splits,
-            "cv_fold_assignments": describe_group_kfold_assignments(train_groups, n_splits),
+            "cv_n_splits": len(cv_splits),
+            "cv_fold_assignments": cv_fold_assignments,
         }
     else:
         estimator.fit(train_features, train_labels)
         fitted_estimator = estimator
         fit_metadata = {
-            "cv_n_splits": n_splits,
-            "cv_fold_assignments": describe_group_kfold_assignments(train_groups, n_splits),
+            "cv_n_splits": len(cv_splits),
+            "cv_fold_assignments": cv_fold_assignments,
         }
+
+    fit_metadata["cv_strategy"] = cv_strategy
+    fit_metadata["split_config_path"] = split_config_path
+    fit_metadata["split_name"] = split_name
 
     predictions = fitted_estimator.predict(test_features)
     return predictions.astype(float, copy=False), fitted_estimator, fit_metadata
@@ -294,6 +311,60 @@ def describe_group_kfold_assignments(train_groups: np.ndarray, n_splits: int) ->
     return assignments
 
 
+def resolve_training_split_config_path(
+    explicit_split_config_path: str | Path | None,
+    feature_manifest_path: Path,
+    feature_manifest: dict[str, object],
+) -> Path | None:
+    """Resolve the split config used for fixed train/validation/test assignments."""
+
+    resolved_explicit = resolve_split_config_path(explicit_split_config_path)
+    if resolved_explicit is not None:
+        return resolved_explicit
+
+    processed_manifest_ref = feature_manifest.get("processed_manifest_path")
+    if processed_manifest_ref:
+        processed_manifest_path = resolve_manifest_path(feature_manifest_path, str(processed_manifest_ref))
+        if processed_manifest_path.exists():
+            processed_manifest = load_processed_manifest(processed_manifest_path)
+            stored_split_config = processed_manifest.get("split_config_path")
+            if stored_split_config:
+                return Path(stored_split_config)
+
+    default_path = default_split_config_path()
+    return default_path if default_path.exists() else None
+
+
+def build_cross_validation_definition(
+    train_metadata: pd.DataFrame,
+    split_config_path: Path | None,
+) -> tuple[list[tuple[np.ndarray, np.ndarray]], list[dict[str, object]], str, str | None, str | None]:
+    """Return explicit CV splits plus reproducibility metadata."""
+
+    if split_config_path is not None:
+        split_config = load_fixed_split_config(split_config_path)
+        cv_splits = build_fixed_validation_splits(train_metadata, split_config)
+        cv_fold_assignments = describe_validation_folds(split_config)
+        return (
+            cv_splits,
+            cv_fold_assignments,
+            "fixed_validation_folds",
+            str(split_config.split_config_path),
+            split_config.split_name,
+        )
+
+    train_groups = train_metadata["participant_id"].to_numpy(copy=True)
+    n_groups = int(pd.Series(train_groups).nunique())
+    n_splits = min(5, n_groups)
+    if n_splits < 2:
+        raise ValueError("At least two distinct training participants are required for grouped validation.")
+    dummy_features = np.zeros((len(train_groups), 1), dtype=np.float32)
+    splitter = GroupKFold(n_splits=n_splits)
+    cv_splits = list(splitter.split(dummy_features, groups=train_groups))
+    cv_fold_assignments = describe_group_kfold_assignments(train_groups, n_splits)
+    return cv_splits, cv_fold_assignments, "dynamic_group_kfold", None, None
+
+
 def save_run_log(
     output_dir: str | Path,
     model_name: str,
@@ -326,6 +397,17 @@ def main() -> None:
         features=features,
         metadata=metadata,
     )
+    split_config_path = resolve_training_split_config_path(
+        explicit_split_config_path=args.split_config,
+        feature_manifest_path=Path(args.feature_manifest),
+        feature_manifest=feature_manifest,
+    )
+    cv_splits, cv_fold_assignments, cv_strategy, resolved_split_config_path, split_name = (
+        build_cross_validation_definition(
+            train_metadata=train_metadata,
+            split_config_path=split_config_path,
+        )
+    )
 
     test_predictions, fitted_estimator, fit_metadata = train_and_predict(
         train_features=train_features,
@@ -334,6 +416,11 @@ def main() -> None:
         train_groups=train_metadata["participant_id"].to_numpy(copy=True),
         regressor_name=args.regressor,
         random_state=args.random_state,
+        cv_splits=cv_splits,
+        cv_fold_assignments=cv_fold_assignments,
+        split_config_path=resolved_split_config_path,
+        split_name=split_name,
+        cv_strategy=cv_strategy,
     )
 
     prediction_frame = test_metadata.copy()

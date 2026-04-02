@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -19,15 +18,19 @@ from src.models.common import (
     save_embedding_artifacts,
     select_window_subset,
 )
+from src.vendor import ResNet1DMoE
 
 DEFAULT_TARGET_HZ = 125
+UPSTREAM_REPOSITORY = "https://github.com/Nokia-Bell-Labs/papagei-foundation-model"
+UPSTREAM_COMMIT = "0c537dad4d2850e15b724260de820dd68d77f0b0"
+DEFAULT_CHECKPOINT_DIR = "papagei-foundation-model"
 
 
 @dataclass(slots=True)
 class PaPaGeiCheckpointInfo:
-    """Resolved external repository and checkpoint paths for PaPaGei."""
+    """Resolved vendored model-code path and checkpoint path for PaPaGei."""
 
-    repo_root: Path
+    model_code_path: Path
     checkpoint_path: Path
 
 
@@ -51,30 +54,32 @@ def resolve_papagei_paths(
     external_root: str | Path | None = None,
     checkpoint_path: str | Path | None = None,
 ) -> PaPaGeiCheckpointInfo:
-    """Resolve the cloned PaPaGei repository and a usable checkpoint path."""
+    """Resolve the vendored model-code path and a usable checkpoint path."""
 
     base_external_root = Path(external_root) if external_root is not None else default_external_root()
-    repo_root = base_external_root / "papagei-foundation-model"
-    if not repo_root.exists():
-        raise FileNotFoundError(f"PaPaGei repository was not found: {repo_root}")
+    weights_root = base_external_root / DEFAULT_CHECKPOINT_DIR
+    model_code_path = Path(__file__).resolve().parents[1] / "vendor" / "papagei_resnet.py"
 
     if checkpoint_path is not None:
         resolved_checkpoint = Path(checkpoint_path)
         if not resolved_checkpoint.exists():
             raise FileNotFoundError(f"PaPaGei checkpoint does not exist: {resolved_checkpoint}")
-        return PaPaGeiCheckpointInfo(repo_root=repo_root, checkpoint_path=resolved_checkpoint)
+        return PaPaGeiCheckpointInfo(model_code_path=model_code_path, checkpoint_path=resolved_checkpoint)
 
     candidate_paths = [
-        repo_root / "weights" / "papagei_s.pt",
-        repo_root / "weights" / "papagei_p.pt",
+        weights_root / "weights" / "papagei_s.pt",
+        weights_root / "weights" / "papagei_p.pt",
+        weights_root / "papagei_s.pt",
     ]
-    candidate_paths.extend(sorted(repo_root.rglob("papagei*.pt")))
+    if weights_root.exists():
+        candidate_paths.extend(sorted(weights_root.rglob("papagei*.pt")))
     for candidate in candidate_paths:
         if candidate.exists():
-            return PaPaGeiCheckpointInfo(repo_root=repo_root, checkpoint_path=candidate)
+            return PaPaGeiCheckpointInfo(model_code_path=model_code_path, checkpoint_path=candidate)
 
     raise FileNotFoundError(
-        "Could not find a PaPaGei checkpoint. Download the official weights and provide --checkpoint-path if needed."
+        "Could not find a PaPaGei checkpoint. Expected either "
+        f"`{weights_root / 'weights' / 'papagei_s.pt'}` or `{weights_root / 'papagei_s.pt'}`."
     )
 
 
@@ -83,14 +88,11 @@ def load_papagei_encoder(
     checkpoint_path: str | Path | None = None,
     device: str | None = None,
 ):
-    """Load the PaPaGei encoder from the cloned official repository."""
+    """Load the PaPaGei encoder from the vendored runtime model definition."""
 
     checkpoint_info = resolve_papagei_paths(external_root=external_root, checkpoint_path=checkpoint_path)
-    if str(checkpoint_info.repo_root) not in sys.path:
-        sys.path.insert(0, str(checkpoint_info.repo_root))
 
     import torch
-    from models.resnet import ResNet1DMoE
 
     resolved_device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
     model = ResNet1DMoE(
@@ -175,13 +177,17 @@ def main() -> None:
         output_dir=args.output_dir,
         source_windows_path=processed_manifest["windows_path"],
         checkpoint_path=str(checkpoint_info.checkpoint_path),
-        external_repo_root=checkpoint_info.repo_root,
+        external_repo_root=checkpoint_info.model_code_path,
         extra_manifest_fields={
             "processed_manifest_path": str(args.manifest_path) if args.manifest_path is not None else "",
             "apply_bandpass": not args.no_bandpass,
             "apply_zscore": not args.no_zscore,
             "batch_size": args.batch_size,
             "device": args.device,
+            "model_code_strategy": "vendored_minimal_source",
+            "model_code_path": str(checkpoint_info.model_code_path),
+            "upstream_repository": UPSTREAM_REPOSITORY,
+            "upstream_commit": UPSTREAM_COMMIT,
         },
     )
     print(json.dumps(summary.to_dict(), indent=2, ensure_ascii=False))

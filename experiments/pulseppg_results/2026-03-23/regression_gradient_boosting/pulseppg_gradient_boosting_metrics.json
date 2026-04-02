@@ -1,0 +1,195 @@
+{
+  "model_name": "pulseppg",
+  "regressor": "gradient_boosting",
+  "random_state": 42,
+  "num_train_windows": 27527,
+  "num_test_windows": 7631,
+  "train_participants": [
+    "P02",
+    "P03",
+    "P05",
+    "P06",
+    "P08",
+    "P09",
+    "P10",
+    "P11",
+    "P12",
+    "P13",
+    "P14",
+    "P15",
+    "P19",
+    "P20",
+    "P21",
+    "P22",
+    "P23",
+    "P24"
+  ],
+  "test_participants": [
+    "P04",
+    "P07",
+    "P16",
+    "P17",
+    "P18"
+  ],
+  "embedding_dim": 512,
+  "feature_manifest_path": "experiments\\pulseppg_results\\2026-03-18\\full\\pulseppg_manifest.json",
+  "cv_best_score": -188.6024425361294,
+  "best_params": {
+    "regressor__learning_rate": 0.1,
+    "regressor__max_depth": 2,
+    "regressor__n_estimators": 100
+  },
+  "cv_n_splits": 5,
+  "num_windows": 7631,
+  "num_valid_predictions": 7631,
+  "coverage": 1.0,
+  "mae": 7.492755483825166,
+  "rmse": 11.809258434075156,
+  "split_config_path": "configs/galaxyppg_submission_split.json",
+  "split_name": "galaxyppg_submission_fixed_split",
+  "validation_strategy": {
+    "type": "GroupKFold",
+    "n_splits": 5,
+    "shuffle": false,
+    "group_field": "participant_id",
+    "note": "There is no single fixed validation set. Validation uses deterministic participant-level GroupKFold over the fixed training participants."
+  },
+  "cv_strategy": "fixed_validation_folds",
+  "cv_fold_assignments": [
+    {
+      "fold": 1,
+      "train_participants": [
+        "P02",
+        "P03",
+        "P05",
+        "P06",
+        "P08",
+        "P10",
+        "P11",
+        "P12",
+        "P13",
+        "P14",
+        "P15",
+        "P21",
+        "P22",
+        "P23",
+        "P24"
+      ],
+      "validation_participants": [
+        "P09",
+        "P19",
+        "P20"
+      ],
+      "num_train_windows": 22887,
+      "num_validation_windows": 4640
+    },
+    {
+      "fold": 2,
+      "train_participants": [
+        "P02",
+        "P03",
+        "P05",
+        "P06",
+        "P09",
+        "P10",
+        "P11",
+        "P12",
+        "P13",
+        "P14",
+        "P19",
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "validation_participants": [
+        "P08",
+        "P15",
+        "P24"
+      ],
+      "num_train_windows": 22890,
+      "num_validation_windows": 4637
+    },
+    {
+      "fold": 3,
+      "train_participants": [
+        "P02",
+        "P05",
+        "P06",
+        "P08",
+        "P09",
+        "P11",
+        "P12",
+        "P15",
+        "P19",
+        "P20",
+        "P21",
+        "P22",
+        "P23",
+        "P24"
+      ],
+      "validation_participants": [
+        "P03",
+        "P10",
+        "P13",
+        "P14"
+      ],
+      "num_train_windows": 21460,
+      "num_validation_windows": 6067
+    },
+    {
+      "fold": 4,
+      "train_participants": [
+        "P03",
+        "P06",
+        "P08",
+        "P09",
+        "P10",
+        "P11",
+        "P13",
+        "P14",
+        "P15",
+        "P19",
+        "P20",
+        "P22",
+        "P23",
+        "P24"
+      ],
+      "validation_participants": [
+        "P02",
+        "P05",
+        "P12",
+        "P21"
+      ],
+      "num_train_windows": 21433,
+      "num_validation_windows": 6094
+    },
+    {
+      "fold": 5,
+      "train_participants": [
+        "P02",
+        "P03",
+        "P05",
+        "P08",
+        "P09",
+        "P10",
+        "P12",
+        "P13",
+        "P14",
+        "P15",
+        "P19",
+        "P20",
+        "P21",
+        "P24"
+      ],
+      "validation_participants": [
+        "P06",
+        "P11",
+        "P22",
+        "P23"
+      ],
+      "num_train_windows": 21438,
+      "num_validation_windows": 6089
+    }
+  ]
+}

@@ -1,24 +1,28 @@
 {
   "module": "src.regression.train_regressor",
   "argv": [
-    "E:\\PycharmProjects\\ppg_project\\src\\regression\\train_regressor.py",
+    "python",
+    "-m",
+    "src.regression.train_regressor",
     "--feature-manifest",
-    "experiments\\pulseppg_results\\2026-03-18\\full\\pulseppg_manifest.json",
+    "experiments/pulseppg_results/2026-03-18/full/pulseppg_manifest.json",
     "--regressor",
     "random_forest",
     "--random-state",
     "42",
+    "--split-config",
+    "configs/galaxyppg_submission_split.json",
     "--output-dir",
-    "experiments\\reproduced_submission\\pulseppg_random_forest"
+    "experiments/reproduced_submission/pulseppg_random_forest"
   ],
-  "feature_manifest_path": "experiments\\pulseppg_results\\2026-03-18\\full\\pulseppg_manifest.json",
+  "feature_manifest_path": "experiments/pulseppg_results/2026-03-18/full/pulseppg_manifest.json",
   "artifacts": {
     "model_name": "pulseppg",
     "regressor": "random_forest",
-    "output_dir": "experiments\\reproduced_submission\\pulseppg_random_forest",
-    "predictions_path": "experiments\\reproduced_submission\\pulseppg_random_forest\\pulseppg_random_forest_predictions.csv",
-    "metrics_path": "experiments\\reproduced_submission\\pulseppg_random_forest\\pulseppg_random_forest_metrics.json",
-    "estimator_path": "experiments\\reproduced_submission\\pulseppg_random_forest\\pulseppg_random_forest_estimator.joblib"
+    "output_dir": "experiments/reproduced_submission/pulseppg_random_forest",
+    "predictions_path": "experiments/reproduced_submission/pulseppg_random_forest/pulseppg_random_forest_predictions.csv",
+    "metrics_path": "experiments/reproduced_submission/pulseppg_random_forest/pulseppg_random_forest_metrics.json",
+    "estimator_path": "experiments/reproduced_submission/pulseppg_random_forest/pulseppg_random_forest_estimator.joblib"
   },
   "metrics": {
     "model_name": "pulseppg",
@@ -203,6 +207,16 @@
     "num_valid_predictions": 7631,
     "coverage": 1.0,
     "mae": 7.286407769380653,
-    "rmse": 11.30392115001437
+    "rmse": 11.30392115001437,
+    "split_config_path": "configs/galaxyppg_submission_split.json",
+    "split_name": "galaxyppg_submission_fixed_split",
+    "validation_strategy": {
+      "type": "GroupKFold",
+      "n_splits": 5,
+      "shuffle": false,
+      "group_field": "participant_id",
+      "note": "There is no single fixed validation set. Validation uses deterministic participant-level GroupKFold over the fixed training participants."
+    },
+    "cv_strategy": "fixed_validation_folds"
   }
 }

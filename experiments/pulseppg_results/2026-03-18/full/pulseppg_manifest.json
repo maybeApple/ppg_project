@@ -9,10 +9,14 @@
   "manifest_path": "pulseppg_manifest.json",
   "source_windows_path": "../../../data/processed/windows/galaxyppg_hr_w10_s2_median_windows.jsonl.gz",
   "checkpoint_path": "../../../external/pulseppg/pulseppg/experiments/out/pulseppg/checkpoint_best.pkl",
-  "external_repo_root": "../../../external/pulseppg",
+  "external_repo_root": "../../../src/vendor/pulseppg_resnet1d.py",
   "processed_manifest_path": "../../../data/processed/galaxyppg_hr_w10_s2_median_manifest.json",
   "apply_bandpass": true,
   "apply_zscore": true,
   "batch_size": 128,
-  "device": "cpu"
+  "device": "cpu",
+  "model_code_strategy": "vendored_minimal_source",
+  "model_code_path": "../../../src/vendor/pulseppg_resnet1d.py",
+  "upstream_repository": "https://github.com/maxxu05/pulseppg",
+  "upstream_commit": "716eaf9cf966e8f76436f2263872ef38b1f90166"
 }

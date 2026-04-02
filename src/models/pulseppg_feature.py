@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -19,15 +18,19 @@ from src.models.common import (
     save_embedding_artifacts,
     select_window_subset,
 )
+from src.vendor import PulsePPGNet
 
 DEFAULT_TARGET_HZ = 50
+UPSTREAM_REPOSITORY = "https://github.com/maxxu05/pulseppg"
+UPSTREAM_COMMIT = "716eaf9cf966e8f76436f2263872ef38b1f90166"
+DEFAULT_CHECKPOINT_DIR = "pulseppg"
 
 
 @dataclass(slots=True)
 class PulsePPGCheckpointInfo:
-    """Resolved external repository and checkpoint paths for PulsePPG."""
+    """Resolved vendored model-code path and checkpoint path for PulsePPG."""
 
-    repo_root: Path
+    model_code_path: Path
     checkpoint_path: Path
 
 
@@ -51,30 +54,32 @@ def resolve_pulseppg_paths(
     external_root: str | Path | None = None,
     checkpoint_path: str | Path | None = None,
 ) -> PulsePPGCheckpointInfo:
-    """Resolve the cloned PulsePPG repository and a usable checkpoint path."""
+    """Resolve the vendored model-code path and a usable checkpoint path."""
 
     base_external_root = Path(external_root) if external_root is not None else default_external_root()
-    repo_root = base_external_root / "pulseppg"
-    if not repo_root.exists():
-        raise FileNotFoundError(f"PulsePPG repository was not found: {repo_root}")
+    weights_root = base_external_root / DEFAULT_CHECKPOINT_DIR
+    model_code_path = Path(__file__).resolve().parents[1] / "vendor" / "pulseppg_resnet1d.py"
 
     if checkpoint_path is not None:
         resolved_checkpoint = Path(checkpoint_path)
         if not resolved_checkpoint.exists():
             raise FileNotFoundError(f"PulsePPG checkpoint does not exist: {resolved_checkpoint}")
-        return PulsePPGCheckpointInfo(repo_root=repo_root, checkpoint_path=resolved_checkpoint)
+        return PulsePPGCheckpointInfo(model_code_path=model_code_path, checkpoint_path=resolved_checkpoint)
 
     candidate_paths = [
-        repo_root / "pulseppg" / "experiments" / "out" / "pulseppg" / "checkpoint_best.pkl",
-        repo_root / "checkpoint_best.pkl",
+        weights_root / "checkpoint_best.pkl",
+        weights_root / "pulseppg" / "experiments" / "out" / "pulseppg" / "checkpoint_best.pkl",
     ]
-    candidate_paths.extend(sorted(repo_root.rglob("checkpoint_best.pkl")))
+    if weights_root.exists():
+        candidate_paths.extend(sorted(weights_root.rglob("checkpoint_best.pkl")))
     for candidate in candidate_paths:
         if candidate.exists():
-            return PulsePPGCheckpointInfo(repo_root=repo_root, checkpoint_path=candidate)
+            return PulsePPGCheckpointInfo(model_code_path=model_code_path, checkpoint_path=candidate)
 
     raise FileNotFoundError(
-        "Could not find a PulsePPG checkpoint. Download the official weights and provide --checkpoint-path if needed."
+        "Could not find a PulsePPG checkpoint. Expected either "
+        f"`{weights_root / 'checkpoint_best.pkl'}` or the legacy upstream path under "
+        f"`{weights_root / 'pulseppg' / 'experiments' / 'out' / 'pulseppg'}`."
     )
 
 
@@ -83,17 +88,14 @@ def load_pulseppg_encoder(
     checkpoint_path: str | Path | None = None,
     device: str | None = None,
 ):
-    """Load the PulsePPG encoder from the cloned official repository."""
+    """Load the PulsePPG encoder from the vendored runtime model definition."""
 
     checkpoint_info = resolve_pulseppg_paths(external_root=external_root, checkpoint_path=checkpoint_path)
-    if str(checkpoint_info.repo_root) not in sys.path:
-        sys.path.insert(0, str(checkpoint_info.repo_root))
 
     import torch
-    from pulseppg.nets.ResNet1D.ResNet1D_Net import Net
 
     resolved_device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
-    model = Net(
+    model = PulsePPGNet(
         in_channels=1,
         base_filters=128,
         kernel_size=11,
@@ -171,13 +173,17 @@ def main() -> None:
         output_dir=args.output_dir,
         source_windows_path=processed_manifest["windows_path"],
         checkpoint_path=str(checkpoint_info.checkpoint_path),
-        external_repo_root=checkpoint_info.repo_root,
+        external_repo_root=checkpoint_info.model_code_path,
         extra_manifest_fields={
             "processed_manifest_path": str(args.manifest_path) if args.manifest_path is not None else "",
             "apply_bandpass": not args.no_bandpass,
             "apply_zscore": not args.no_zscore,
             "batch_size": args.batch_size,
             "device": args.device,
+            "model_code_strategy": "vendored_minimal_source",
+            "model_code_path": str(checkpoint_info.model_code_path),
+            "upstream_repository": UPSTREAM_REPOSITORY,
+            "upstream_commit": UPSTREAM_COMMIT,
         },
     )
     print(json.dumps(summary.to_dict(), indent=2, ensure_ascii=False))

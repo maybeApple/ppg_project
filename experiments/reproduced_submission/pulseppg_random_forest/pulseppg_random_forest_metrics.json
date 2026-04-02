@@ -181,5 +181,15 @@
   "num_valid_predictions": 7631,
   "coverage": 1.0,
   "mae": 7.286407769380653,
-  "rmse": 11.30392115001437
+  "rmse": 11.30392115001437,
+  "split_config_path": "configs/galaxyppg_submission_split.json",
+  "split_name": "galaxyppg_submission_fixed_split",
+  "validation_strategy": {
+    "type": "GroupKFold",
+    "n_splits": 5,
+    "shuffle": false,
+    "group_field": "participant_id",
+    "note": "There is no single fixed validation set. Validation uses deterministic participant-level GroupKFold over the fixed training participants."
+  },
+  "cv_strategy": "fixed_validation_folds"
 }

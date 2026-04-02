@@ -9,7 +9,16 @@ from datetime import datetime
 from pathlib import Path
 
 from src.baseline import apply_peak_detection_baseline, apply_spectral_baseline
-from src.data import build_window_dataset, default_stride_rationale, split_by_participant
+from src.data import (
+    build_window_dataset,
+    configured_participant_ids,
+    default_stride_rationale,
+    load_fixed_split_config,
+    load_processed_manifest,
+    load_processed_windows,
+    resolve_split_config_path,
+    split_by_participant,
+)
 from src.regression.evaluate import evaluate_prediction_frame
 
 
@@ -19,6 +28,9 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--method", choices=["peak", "spectral"], default="peak")
     parser.add_argument("--reference-source", choices=["hr", "ibi"], default="hr")
+    parser.add_argument("--dataset-root", type=Path, default=None)
+    parser.add_argument("--processed-manifest", type=Path, default=None)
+    parser.add_argument("--split-config", type=Path, default=None)
     parser.add_argument("--test-size", type=float, default=0.2)
     parser.add_argument("--random-state", type=int, default=42)
     parser.add_argument("--window-seconds", type=float, default=10.0)
@@ -35,16 +47,64 @@ def main() -> None:
     """Build windows, run one baseline, evaluate, and save the outputs."""
 
     args = parse_args()
-    windows = build_window_dataset(
-        reference_source=args.reference_source,
-        window_seconds=args.window_seconds,
-        stride_seconds=args.stride_seconds,
-    )
-    _, test_windows, train_participants, test_participants = split_by_participant(
-        windows,
-        test_size=args.test_size,
-        random_state=args.random_state,
-    )
+    split_config_path = resolve_split_config_path(args.split_config)
+    fixed_split = load_fixed_split_config(split_config_path) if split_config_path is not None else None
+
+    if args.processed_manifest is not None:
+        processed_manifest = load_processed_manifest(args.processed_manifest)
+        windows = load_processed_windows(processed_manifest["windows_path"])
+        if windows.empty:
+            raise RuntimeError("The processed manifest exists, but its window table is empty.")
+        if "split" not in windows.columns:
+            raise KeyError("Processed windows must contain a `split` column.")
+        train_windows = windows.loc[windows["split"] == "train"].reset_index(drop=True)
+        test_windows = windows.loc[windows["split"] == "test"].reset_index(drop=True)
+        train_participants = sorted(train_windows["participant_id"].unique().tolist())
+        test_participants = sorted(test_windows["participant_id"].unique().tolist())
+        if fixed_split is not None:
+            if train_participants != sorted(fixed_split.train_participants):
+                raise ValueError(
+                    "Processed manifest train participants do not match the fixed split config. "
+                    f"Observed {train_participants}, expected {sorted(fixed_split.train_participants)}."
+                )
+            if test_participants != sorted(fixed_split.test_participants):
+                raise ValueError(
+                    "Processed manifest test participants do not match the fixed split config. "
+                    f"Observed {test_participants}, expected {sorted(fixed_split.test_participants)}."
+                )
+        input_source = {
+            "mode": "processed_manifest",
+            "processed_manifest_path": str(Path(processed_manifest["manifest_path"]).resolve()),
+            "split_config_path": None if fixed_split is None else str(fixed_split.split_config_path),
+        }
+    else:
+        participant_ids = configured_participant_ids(fixed_split) if fixed_split is not None else None
+        windows = build_window_dataset(
+            dataset_root=args.dataset_root,
+            participant_ids=participant_ids,
+            reference_source=args.reference_source,
+            window_seconds=args.window_seconds,
+            stride_seconds=args.stride_seconds,
+        )
+        if windows.empty:
+            raise RuntimeError(
+                "Baseline preprocessing produced zero windows. Check the dataset path, participant folders, "
+                "and preprocessing parameters."
+            )
+        _, test_windows, train_participants, test_participants = split_by_participant(
+            windows,
+            test_size=args.test_size,
+            random_state=args.random_state,
+            test_participants=None if fixed_split is None else fixed_split.test_participants,
+        )
+        input_source = {
+            "mode": "raw_dataset",
+            "dataset_root": str(args.dataset_root) if args.dataset_root is not None else "",
+            "split_config_path": None if fixed_split is None else str(fixed_split.split_config_path),
+        }
+
+    if test_windows.empty:
+        raise RuntimeError("The selected baseline run has zero test windows, so evaluation cannot proceed.")
 
     if args.method == "peak":
         predictions = apply_peak_detection_baseline(test_windows)
@@ -62,6 +122,10 @@ def main() -> None:
         "random_state": args.random_state,
         "train_participants": train_participants,
         "test_participants": test_participants,
+        "split_config_path": None if fixed_split is None else str(fixed_split.split_config_path),
+        "split_name": None if fixed_split is None else fixed_split.split_name,
+        "validation_strategy": None if fixed_split is None else fixed_split.validation_strategy,
+        "validation_folds": None if fixed_split is None else [fold.to_dict() for fold in fixed_split.validation_folds],
         **summary.to_dict(),
     }
 
@@ -76,6 +140,7 @@ def main() -> None:
             {
                 "module": "src.baseline.run_baseline",
                 "argv": sys.argv,
+                "input_source": input_source,
                 "predictions_path": str(predictions_path),
                 "metrics_path": str(metrics_path),
                 "metrics": metadata,

@@ -21,17 +21,9 @@ reports/
 data/raw/GalaxyPPG/*
 !data/raw/GalaxyPPG/README.md
 
-# Model weights are downloaded separately according to README.md
-external/pulseppg/pulseppg_model_weights.zip
-external/pulseppg/pulseppg/experiments/out/motifdist/
-external/pulseppg/pulseppg/experiments/out/pulseppg/*
-!external/pulseppg/pulseppg/experiments/out/pulseppg/.gitkeep
-external/papagei-foundation-model/weights/*
-!external/papagei-foundation-model/weights/.gitkeep
-
-# Derived experiment artifacts not listed in README.md
-experiments/**/plots/
-experiments/**/*_estimator.joblib
+# Downloaded checkpoints stay local; the repository only keeps placeholder folders
+external/*
+!external/.gitkeep
 
 # Keep only the documented "full" feature bundles
 experiments/pulseppg_results/2026-03-18/pulseppg_features.npy
@@ -41,10 +33,5 @@ experiments/papagei_results/2026-03-18/papagei_features.npy
 experiments/papagei_results/2026-03-18/papagei_manifest.json
 experiments/papagei_results/2026-03-18/papagei_metadata.csv
 
-# Keep only the regression result directories documented in README.md
-experiments/pulseppg_results/2026-03-18/regression_linear/
-experiments/pulseppg_results/2026-03-18/regression_ridge/
-experiments/pulseppg_results/2026-03-23/regression_gradient_boosting/
-experiments/papagei_results/2026-03-18/regression_linear/
-experiments/papagei_results/2026-03-18/regression_ridge/
-experiments/papagei_results/2026-03-23/regression_gradient_boosting/
+# Local verification scratch space
+experiments/_verification/
