@@ -1,4 +1,4 @@
-﻿{
+{
   "project": "GalaxyPPG heart-rate estimation reproducibility protocol",
   "environment": {
     "python_version": "3.13.x",
@@ -32,10 +32,28 @@
   "preprocessing": {
     "script": "python -m src.data.export_processed",
     "split_config_path": "configs/galaxyppg_submission_split.json",
-    "reference_source": "hr",
+    "corrected_processed_manifest": "data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json",
+    "canonical_schema": {
+      "version": "canonical_ppg_v1",
+      "implementation": "src/data/canonical.py",
+      "required_signal_groups": [
+        "ppg",
+        "accelerometer",
+        "ecg_or_ibi_reference"
+      ]
+    },
+    "reference_source": "ibi",
+    "ppg_canonicalization": {
+      "ppg_inverted": true,
+      "canonical_column": "ppg",
+      "raw_column": "ppg_raw",
+      "method": "Galaxy Watch PPG is inverted exactly once in src.data.loader.load_galaxy_watch_ppg; downstream code consumes the canonical ppg column."
+    },
     "window_seconds": 10.0,
     "stride_seconds": 2.0,
+    "label_method": "beat_interval_instant_hr",
     "label_aggregation": "median",
+    "min_valid_beats": 2,
     "participant_split_random_state": 42,
     "timestamp_alignment": {
       "polar_phone_timestamp_offset_ms": 32400000,
@@ -57,28 +75,55 @@
         500
       ],
       "min_session_duration_seconds": 10.0,
-      "min_reference_samples_per_window": 1,
+      "min_valid_beat_intervals_per_window": 2,
       "min_ppg_coverage_fraction": 0.8,
-      "drop_rule": "drop windows that do not meet both the minimum PPG and reference-sample thresholds"
+      "drop_rule": "drop windows that do not meet both the minimum PPG coverage threshold and the minimum valid beat-interval HR threshold"
+    },
+    "label_generation": {
+      "method": "beat_interval_instant_hr",
+      "instant_hr_formula": "instant_hr_bpm = 60000 / rr_interval_ms",
+      "ibi_source": "PolarH10/IBI.csv duration values are used directly as rr_interval_ms",
+      "ecg_source": "When ECG is selected, R peaks are detected per 10-second window and adjacent R-R intervals are converted with the same formula",
+      "window_target": "median instantaneous HR inside each 10-second window",
+      "discard_rule": "drop a window when it has fewer than 2 valid positive RR intervals after timestamp alignment"
     }
   },
   "embedding_extraction": {
+    "experiment_config": "configs/experiment_modes.json",
     "pulseppg": {
       "script": "python -m src.models.pulseppg_feature",
-      "input_manifest": "data/processed/galaxyppg_hr_w10_s2_median_manifest.json",
+      "input_manifest": "data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json",
       "target_sampling_hz": 50,
-      "apply_bandpass": true,
-      "apply_zscore": true,
+      "preprocessing_mode": "harmonized",
+      "preprocessing": {
+        "mode": "harmonized",
+        "apply_bandpass": true,
+        "normalization": "per_window_zscore",
+        "operation_order": [
+          "timestamp_resample",
+          "per_window_zscore",
+          "chebyshev2_bandpass"
+        ]
+      },
       "batch_size": 128,
       "device": "cpu",
       "saved_feature_manifest": "experiments/pulseppg_results/2026-03-18/full/pulseppg_manifest.json"
     },
     "papagei": {
       "script": "python -m src.models.papagei_feature",
-      "input_manifest": "data/processed/galaxyppg_hr_w10_s2_median_manifest.json",
+      "input_manifest": "data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json",
       "target_sampling_hz": 125,
-      "apply_bandpass": true,
-      "apply_zscore": true,
+      "preprocessing_mode": "harmonized",
+      "preprocessing": {
+        "mode": "harmonized",
+        "apply_bandpass": true,
+        "normalization": "per_window_zscore",
+        "operation_order": [
+          "timestamp_resample",
+          "per_window_zscore",
+          "chebyshev2_bandpass"
+        ]
+      },
       "batch_size": 128,
       "device": "cpu",
       "saved_feature_manifest": "experiments/papagei_results/2026-03-18/full/papagei_manifest.json"

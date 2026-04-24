@@ -14,6 +14,7 @@ import pandas as pd
 WINDOW_SEQUENCE_COLUMNS = [
     "ppg_timestamps_ms",
     "ppg_values",
+    "ppg_raw_values",
     "reference_timestamps_ms",
     "reference_hr_bpm_values",
     "reference_rr_interval_ms_values",
@@ -33,9 +34,13 @@ LABEL_COLUMNS = [
     "ppg_sampling_hz",
     "ppg_sample_count",
     "reference_sample_count",
+    "valid_beat_count",
     "label_hr_bpm",
+    "label_method",
     "label_aggregation",
     "reference_source",
+    "ppg_inverted",
+    "ppg_canonical_source",
 ]
 
 
@@ -46,10 +51,17 @@ class ProcessedDatasetManifest:
     artifact_name: str
     created_at_utc: str
     dataset_root: str
+    canonical_schema: dict[str, object]
     reference_source: str
+    ppg_inverted: bool
+    ppg_canonical_source: str
     window_seconds: float
     stride_seconds: float
+    label_method: str
     label_aggregation: str
+    min_valid_beats: int
+    min_reference_samples: int
+    label_generation: dict[str, object]
     test_size: float
     random_state: int
     num_windows: int
@@ -95,6 +107,7 @@ def build_artifact_name(
     reference_source: str,
     window_seconds: float,
     stride_seconds: float,
+    label_method: str,
     label_aggregation: str,
 ) -> str:
     """Build a compact, filesystem-safe artifact name from dataset settings."""
@@ -103,6 +116,7 @@ def build_artifact_name(
         f"galaxyppg_{reference_source}_"
         f"w{_format_float_token(window_seconds)}_"
         f"s{_format_float_token(stride_seconds)}_"
+        f"{label_method}_"
         f"{label_aggregation}"
     )
 
@@ -139,16 +153,24 @@ def build_label_table(windows: pd.DataFrame) -> pd.DataFrame:
 
     if windows.empty:
         return pd.DataFrame(columns=LABEL_COLUMNS)
-    return windows.loc[:, LABEL_COLUMNS].copy()
+    available_columns = [column for column in LABEL_COLUMNS if column in windows.columns]
+    return windows.loc[:, available_columns].copy()
 
 
 def save_processed_dataset(
     windows: pd.DataFrame,
     dataset_root: str | Path,
+    canonical_schema: dict[str, object],
     reference_source: str,
+    ppg_inverted: bool,
+    ppg_canonical_source: str,
     window_seconds: float,
     stride_seconds: float,
+    label_method: str,
     label_aggregation: str,
+    min_valid_beats: int,
+    min_reference_samples: int,
+    label_generation: dict[str, object],
     test_size: float,
     random_state: int,
     train_participants: list[str],
@@ -172,6 +194,7 @@ def save_processed_dataset(
         reference_source=reference_source,
         window_seconds=window_seconds,
         stride_seconds=stride_seconds,
+        label_method=label_method,
         label_aggregation=label_aggregation,
     )
     windows_path = windows_dir / f"{artifact_name}_windows.jsonl.gz"
@@ -196,10 +219,17 @@ def save_processed_dataset(
         artifact_name=artifact_name,
         created_at_utc=datetime.now(timezone.utc).isoformat(),
         dataset_root=_portable_path_for_manifest(Path(dataset_root), manifest_dir),
+        canonical_schema=dict(canonical_schema),
         reference_source=reference_source,
+        ppg_inverted=ppg_inverted,
+        ppg_canonical_source=ppg_canonical_source,
         window_seconds=window_seconds,
         stride_seconds=stride_seconds,
+        label_method=label_method,
         label_aggregation=label_aggregation,
+        min_valid_beats=int(min_valid_beats),
+        min_reference_samples=int(min_reference_samples),
+        label_generation=dict(label_generation),
         test_size=test_size,
         random_state=random_state,
         num_windows=int(len(normalized_windows)),

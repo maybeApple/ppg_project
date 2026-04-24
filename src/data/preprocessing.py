@@ -191,6 +191,9 @@ def interpolate_reference_to_target(
 ) -> np.ndarray:
     """Interpolate reference HR values onto the PPG timestamps."""
 
+    source_timestamps_ms = pd.to_numeric(pd.Series(source_timestamps_ms), errors="coerce").to_numpy(dtype=float)
+    source_values = pd.to_numeric(pd.Series(source_values), errors="coerce").to_numpy(dtype=float)
+    target_timestamps_ms = pd.to_numeric(pd.Series(target_timestamps_ms), errors="coerce").to_numpy(dtype=float)
     valid_mask = ~(np.isnan(source_timestamps_ms) | np.isnan(source_values))
     source_timestamps_ms = source_timestamps_ms[valid_mask]
     source_values = source_values[valid_mask]

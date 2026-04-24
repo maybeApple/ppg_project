@@ -10,6 +10,7 @@ from pathlib import Path
 
 from src.baseline import apply_peak_detection_baseline, apply_spectral_baseline
 from src.data import (
+    LabelGenerationConfig,
     build_window_dataset,
     configured_participant_ids,
     default_stride_rationale,
@@ -27,7 +28,15 @@ def parse_args() -> argparse.Namespace:
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--method", choices=["peak", "spectral"], default="peak")
-    parser.add_argument("--reference-source", choices=["hr", "ibi"], default="hr")
+    parser.add_argument("--reference-source", choices=["auto", "hr", "ibi", "ecg"], default="ibi")
+    parser.add_argument(
+        "--label-method",
+        choices=["beat_interval_instant_hr", "provided_hr_samples"],
+        default="beat_interval_instant_hr",
+    )
+    parser.add_argument("--label-aggregation", choices=["median", "mean"], default="median")
+    parser.add_argument("--min-valid-beats", type=int, default=2)
+    parser.add_argument("--min-reference-samples", type=int, default=1)
     parser.add_argument("--dataset-root", type=Path, default=None)
     parser.add_argument("--processed-manifest", type=Path, default=None)
     parser.add_argument("--split-config", type=Path, default=None)
@@ -78,6 +87,7 @@ def main() -> None:
             "split_config_path": None if fixed_split is None else str(fixed_split.split_config_path),
         }
     else:
+        processed_manifest = {}
         participant_ids = configured_participant_ids(fixed_split) if fixed_split is not None else None
         windows = build_window_dataset(
             dataset_root=args.dataset_root,
@@ -85,6 +95,10 @@ def main() -> None:
             reference_source=args.reference_source,
             window_seconds=args.window_seconds,
             stride_seconds=args.stride_seconds,
+            label_method=args.label_method,
+            label_aggregation=args.label_aggregation,
+            min_valid_beats=args.min_valid_beats,
+            min_reference_samples=args.min_reference_samples,
         )
         if windows.empty:
             raise RuntimeError(
@@ -114,10 +128,25 @@ def main() -> None:
     summary = evaluate_prediction_frame(predictions)
     metadata = {
         "method": args.method,
-        "reference_source": args.reference_source,
-        "window_seconds": args.window_seconds,
-        "stride_seconds": args.stride_seconds,
+        "reference_source": processed_manifest.get("reference_source", args.reference_source),
+        "window_seconds": processed_manifest.get("window_seconds", args.window_seconds),
+        "stride_seconds": processed_manifest.get("stride_seconds", args.stride_seconds),
         "stride_rationale": default_stride_rationale(),
+        "label_method": processed_manifest.get("label_method", args.label_method),
+        "label_aggregation": processed_manifest.get("label_aggregation", args.label_aggregation),
+        "min_valid_beats": processed_manifest.get("min_valid_beats", args.min_valid_beats),
+        "min_reference_samples": processed_manifest.get("min_reference_samples", args.min_reference_samples),
+        "label_generation": processed_manifest.get(
+            "label_generation",
+            LabelGenerationConfig(
+                method=args.label_method,
+                aggregation=args.label_aggregation,
+                min_valid_beats=args.min_valid_beats,
+                min_reference_samples=args.min_reference_samples,
+            ).to_dict(),
+        ),
+        "ppg_inverted": processed_manifest.get("ppg_inverted"),
+        "ppg_canonical_source": processed_manifest.get("ppg_canonical_source"),
         "test_size": args.test_size,
         "random_state": args.random_state,
         "train_participants": train_participants,

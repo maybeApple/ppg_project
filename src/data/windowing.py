@@ -10,31 +10,39 @@ from typing import Literal
 import pandas as pd
 
 from .loader import load_participant_data, list_participants
+from .labels import LabelAggregation, LabelGenerationConfig, LabelMethod, compute_window_label
 from .preprocessing import AlignedSession, align_participant_sessions
-
-LabelAggregation = Literal["mean", "median"]
 
 #Each sample window is 10 seconds long.The window sliding step is 2 seconds.
 #Therefore, it is an overlapping sliding window, with adjacent windows overlapping for 8 seconds.
 DEFAULT_WINDOW_SECONDS = 10.0
 DEFAULT_STRIDE_SECONDS = 2.0
+DEFAULT_MIN_VALID_BEATS = 2
 
 
 def build_window_dataset(
     dataset_root: str | Path | None = None,
     participant_ids: list[str] | None = None,
-    reference_source: Literal["auto", "hr", "ibi"] = "hr",
+    reference_source: Literal["auto", "hr", "ibi", "ecg"] = "auto",
     window_seconds: float = DEFAULT_WINDOW_SECONDS,
     stride_seconds: float = DEFAULT_STRIDE_SECONDS,
     label_aggregation: LabelAggregation = "median",
+    label_method: LabelMethod = "beat_interval_instant_hr",
     min_duration_seconds: float = 10.0,
     min_reference_samples: int = 1,
+    min_valid_beats: int = DEFAULT_MIN_VALID_BEATS,
     min_ppg_coverage: float = 0.8,
 ) -> pd.DataFrame:
     """Load, align, and window the whole dataset into a single table."""
 
     selected_participants = participant_ids or list_participants(dataset_root)
     all_windows: list[pd.DataFrame] = []
+    label_config = LabelGenerationConfig(
+        method=label_method,
+        aggregation=label_aggregation,
+        min_valid_beats=min_valid_beats,
+        min_reference_samples=min_reference_samples,
+    )
 
     for participant_id in selected_participants:
         participant = load_participant_data(
@@ -50,8 +58,7 @@ def build_window_dataset(
             aligned_sessions=aligned_sessions,
             window_seconds=window_seconds,
             stride_seconds=stride_seconds,
-            label_aggregation=label_aggregation,
-            min_reference_samples=min_reference_samples,
+            label_config=label_config,
             min_ppg_coverage=min_ppg_coverage,
         )
         if not session_windows.empty:
@@ -71,11 +78,16 @@ def build_window_dataset(
                 "ppg_sampling_hz",
                 "ppg_sample_count",
                 "reference_sample_count",
+                "valid_beat_count",
                 "label_hr_bpm",
+                "label_method",
                 "label_aggregation",
                 "reference_source",
+                "ppg_inverted",
+                "ppg_canonical_source",
                 "ppg_timestamps_ms",
                 "ppg_values",
+                "ppg_raw_values",
                 "reference_timestamps_ms",
                 "reference_hr_bpm_values",
                 "reference_rr_interval_ms_values",
@@ -89,19 +101,18 @@ def generate_windows_from_sessions(
     aligned_sessions: list[AlignedSession],
     window_seconds: float = DEFAULT_WINDOW_SECONDS,
     stride_seconds: float = DEFAULT_STRIDE_SECONDS,
-    label_aggregation: LabelAggregation = "median",
-    min_reference_samples: int = 1,
+    label_config: LabelGenerationConfig | None = None,
     min_ppg_coverage: float = 0.8,
 ) -> pd.DataFrame:
     """Window multiple aligned sessions and concatenate the results."""
 
+    resolved_label_config = label_config or LabelGenerationConfig()
     windows = [
         generate_session_windows(
             aligned_session=session,
             window_seconds=window_seconds,
             stride_seconds=stride_seconds,
-            label_aggregation=label_aggregation,
-            min_reference_samples=min_reference_samples,
+            label_config=resolved_label_config,
             min_ppg_coverage=min_ppg_coverage,
         )
         for session in aligned_sessions
@@ -116,14 +127,14 @@ def generate_session_windows(
     aligned_session: AlignedSession,
     window_seconds: float = DEFAULT_WINDOW_SECONDS,
     stride_seconds: float = DEFAULT_STRIDE_SECONDS,
-    label_aggregation: LabelAggregation = "median",
-    min_reference_samples: int = 1,
+    label_config: LabelGenerationConfig | None = None,
     min_ppg_coverage: float = 0.8,
 ) -> pd.DataFrame:
     """Generate fixed windows and one HR label per window from a single session."""
 
-    if label_aggregation not in {"mean", "median"}:
-        raise ValueError(f"Unsupported label aggregation: {label_aggregation}")
+    resolved_label_config = label_config or LabelGenerationConfig()
+    if resolved_label_config.aggregation not in {"mean", "median"}:
+        raise ValueError(f"Unsupported label aggregation: {resolved_label_config.aggregation}")
     if window_seconds <= 0 or stride_seconds <= 0:
         raise ValueError("window_seconds and stride_seconds must be positive")
 
@@ -152,13 +163,19 @@ def generate_session_windows(
             & (aligned_session.reference["timestamp_ms"] < window_end_ms)
         ]
 
-        if len(ppg_window) < min_ppg_samples or len(reference_window) < min_reference_samples:
+        if len(ppg_window) < min_ppg_samples:
             continue
 
-        if label_aggregation == "median":
-            label_hr_bpm = float(reference_window["hr_bpm"].median())
-        else:
-            label_hr_bpm = float(reference_window["hr_bpm"].mean())
+        label = compute_window_label(reference_window=reference_window, config=resolved_label_config)
+        if label is None:
+            continue
+
+        ppg_inverted = bool(ppg_window["ppg_inverted"].all()) if "ppg_inverted" in ppg_window.columns else False
+        ppg_canonical_source = (
+            str(ppg_window["ppg_canonical_source"].iloc[0])
+            if "ppg_canonical_source" in ppg_window.columns and not ppg_window.empty
+            else ""
+        )
 
         window_rows.append(
             {
@@ -172,19 +189,20 @@ def generate_session_windows(
                 "stride_s": stride_seconds,
                 "ppg_sampling_hz": aligned_session.ppg_sampling_hz,
                 "ppg_sample_count": int(len(ppg_window)),
-                "reference_sample_count": int(len(reference_window)),
-                "label_hr_bpm": label_hr_bpm,
-                "label_aggregation": label_aggregation,
+                "reference_sample_count": label.reference_sample_count,
+                "valid_beat_count": label.valid_beat_count,
+                "label_hr_bpm": label.label_hr_bpm,
+                "label_method": label.label_method,
+                "label_aggregation": label.label_aggregation,
                 "reference_source": aligned_session.reference_source,
+                "ppg_inverted": ppg_inverted,
+                "ppg_canonical_source": ppg_canonical_source,
                 "ppg_timestamps_ms": ppg_window["timestamp_ms"].tolist(),
                 "ppg_values": ppg_window["ppg"].tolist(),
-                "reference_timestamps_ms": reference_window["timestamp_ms"].tolist(),
-                "reference_hr_bpm_values": reference_window["hr_bpm"].tolist(),
-                "reference_rr_interval_ms_values": (
-                    reference_window["rr_interval_ms"].dropna().tolist()
-                    if "rr_interval_ms" in reference_window.columns
-                    else []
-                ),
+                "ppg_raw_values": ppg_window["ppg_raw"].tolist() if "ppg_raw" in ppg_window.columns else [],
+                "reference_timestamps_ms": label.reference_timestamps_ms,
+                "reference_hr_bpm_values": label.reference_hr_bpm_values,
+                "reference_rr_interval_ms_values": label.reference_rr_interval_ms_values,
             }
         )
 

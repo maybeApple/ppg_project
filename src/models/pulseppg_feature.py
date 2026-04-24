@@ -12,8 +12,11 @@ import numpy as np
 import pandas as pd
 
 from src.models.common import (
+    SignalPreprocessingConfig,
+    build_signal_preprocessing_config,
     build_window_signal_matrix,
     default_external_root,
+    load_signal_preprocessing_config,
     load_windows_from_manifest,
     save_embedding_artifacts,
     select_window_subset,
@@ -45,6 +48,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", type=str, default=None)
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--max-windows", type=int, default=None)
+    parser.add_argument("--experiment-config", type=Path, default=Path("configs") / "experiment_modes.json")
+    parser.add_argument("--experiment-mode", choices=["harmonized", "model_faithful"], default=None)
+    parser.add_argument("--preprocessing-mode", choices=["harmonized", "model_faithful"], default="harmonized")
+    parser.add_argument(
+        "--normalization",
+        choices=["none", "per_window_zscore", "person_specific_zscore", "causal_running_zscore"],
+        default=None,
+    )
     parser.add_argument("--no-bandpass", action="store_true", default=False)
     parser.add_argument("--no-zscore", action="store_true", default=False)
     return parser.parse_args()
@@ -121,6 +132,7 @@ def extract_pulseppg_embeddings(
     batch_size: int = 256,
     apply_bandpass: bool = True,
     apply_zscore: bool = True,
+    preprocessing_config: SignalPreprocessingConfig | None = None,
 ) -> tuple[np.ndarray, PulsePPGCheckpointInfo]:
     """Extract PulsePPG embeddings for a processed window table."""
 
@@ -136,6 +148,7 @@ def extract_pulseppg_embeddings(
         target_sampling_hz=DEFAULT_TARGET_HZ,
         apply_zscore=apply_zscore,
         apply_bandpass=apply_bandpass,
+        preprocessing_config=preprocessing_config,
     )
     tensor = torch.as_tensor(matrix, dtype=torch.float32).unsqueeze(1)
 
@@ -155,6 +168,24 @@ def main() -> None:
     args = parse_args()
     windows, processed_manifest = load_windows_from_manifest(args.manifest_path)
     windows = select_window_subset(windows, max_windows=args.max_windows)
+    normalization = "none" if args.no_zscore else args.normalization
+    if args.experiment_config is not None and args.experiment_config.exists():
+        preprocessing_config = load_signal_preprocessing_config(
+            config_path=args.experiment_config,
+            model_name="pulseppg",
+            mode_name=args.experiment_mode or args.preprocessing_mode,
+            target_sampling_hz=DEFAULT_TARGET_HZ,
+            normalization_override=normalization,
+            apply_bandpass_override=False if args.no_bandpass else None,
+        )
+    else:
+        preprocessing_config = build_signal_preprocessing_config(
+            model_name="pulseppg",
+            target_sampling_hz=DEFAULT_TARGET_HZ,
+            mode=args.preprocessing_mode,
+            normalization=normalization,
+            apply_bandpass=not args.no_bandpass,
+        )
 
     embeddings, checkpoint_info = extract_pulseppg_embeddings(
         windows=windows,
@@ -162,8 +193,7 @@ def main() -> None:
         external_root=args.external_root,
         device=args.device,
         batch_size=args.batch_size,
-        apply_bandpass=not args.no_bandpass,
-        apply_zscore=not args.no_zscore,
+        preprocessing_config=preprocessing_config,
     )
     summary = save_embedding_artifacts(
         model_name="pulseppg",
@@ -176,8 +206,13 @@ def main() -> None:
         external_repo_root=checkpoint_info.model_code_path,
         extra_manifest_fields={
             "processed_manifest_path": str(args.manifest_path) if args.manifest_path is not None else "",
-            "apply_bandpass": not args.no_bandpass,
-            "apply_zscore": not args.no_zscore,
+            "experiment_config_path": str(args.experiment_config) if args.experiment_config is not None else "",
+            "experiment_mode": args.experiment_mode or args.preprocessing_mode or preprocessing_config.mode,
+            "preprocessing": preprocessing_config.to_dict(),
+            "preprocessing_mode": preprocessing_config.mode,
+            "apply_bandpass": preprocessing_config.apply_bandpass,
+            "normalization": preprocessing_config.normalization,
+            "apply_zscore": preprocessing_config.normalization != "none",
             "batch_size": args.batch_size,
             "device": args.device,
             "model_code_strategy": "vendored_minimal_source",

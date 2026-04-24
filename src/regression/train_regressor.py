@@ -438,6 +438,11 @@ def main() -> None:
         "test_participants": sorted(test_metadata["participant_id"].unique().tolist()),
         "embedding_dim": int(features.shape[1]),
         "feature_manifest_path": str(args.feature_manifest),
+        "feature_preprocessing": feature_manifest.get("preprocessing"),
+        "preprocessing_mode": feature_manifest.get("preprocessing_mode"),
+        "feature_normalization": feature_manifest.get("normalization"),
+        "feature_apply_bandpass": feature_manifest.get("apply_bandpass"),
+        "processed_manifest_path": feature_manifest.get("processed_manifest_path"),
         **fit_metadata,
         **summary.to_dict(),
     }

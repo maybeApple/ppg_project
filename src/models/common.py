@@ -21,6 +21,12 @@ DEFAULT_PROCESSED_MANIFEST = (
     Path(__file__).resolve().parents[2]
     / "data"
     / "processed"
+    / "galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json"
+)
+LEGACY_PROCESSED_MANIFEST = (
+    Path(__file__).resolve().parents[2]
+    / "data"
+    / "processed"
     / "galaxyppg_hr_w10_s2_median_manifest.json"
 )
 
@@ -47,6 +53,110 @@ class EmbeddingExportSummary:
         return asdict(self)
 
 
+@dataclass(slots=True)
+class SignalPreprocessingConfig:
+    """Configuration for traceable signal preprocessing before embedding export."""
+
+    mode: str
+    target_sampling_hz: int
+    apply_bandpass: bool = True
+    normalization: str = "per_window_zscore"
+    low_hz: float = 0.5
+    high_hz: float = 12.0
+    filter_order: int = 4
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to a JSON-serializable dictionary with an explicit operation order."""
+
+        payload = asdict(self)
+        payload["operation_order"] = self.operation_order()
+        return payload
+
+    def operation_order(self) -> list[str]:
+        """Return the exact preprocessing order applied to the signal."""
+
+        operations = ["timestamp_resample"]
+        if self.normalization == "per_window_zscore":
+            operations.append("per_window_zscore")
+        if self.apply_bandpass:
+            operations.append("chebyshev2_bandpass")
+        if self.normalization in {"person_specific_zscore", "causal_running_zscore"}:
+            operations.append(self.normalization)
+        return operations
+
+
+def build_signal_preprocessing_config(
+    model_name: str,
+    target_sampling_hz: int,
+    mode: str = "harmonized",
+    normalization: str | None = None,
+    apply_bandpass: bool | None = None,
+) -> SignalPreprocessingConfig:
+    """Build a model preprocessing config without scattering model branches."""
+
+    if mode not in {"harmonized", "model_faithful"}:
+        raise ValueError(f"Unsupported preprocessing mode: {mode}")
+
+    if normalization is None:
+        normalization = "per_window_zscore"
+    if apply_bandpass is None:
+        apply_bandpass = True
+
+    if normalization not in {"none", "per_window_zscore", "person_specific_zscore", "causal_running_zscore"}:
+        raise ValueError(f"Unsupported normalization strategy: {normalization}")
+
+    return SignalPreprocessingConfig(
+        mode=mode,
+        target_sampling_hz=target_sampling_hz,
+        apply_bandpass=bool(apply_bandpass),
+        normalization=normalization,
+    )
+
+
+def load_signal_preprocessing_config(
+    config_path: str | Path,
+    model_name: str,
+    mode_name: str | None,
+    target_sampling_hz: int,
+    normalization_override: str | None = None,
+    apply_bandpass_override: bool | None = None,
+) -> SignalPreprocessingConfig:
+    """Load a signal preprocessing config from an experiment-mode JSON file."""
+
+    payload = json.loads(Path(config_path).read_text(encoding="utf-8"))
+    resolved_mode_name = mode_name or str(payload.get("default_mode", "harmonized"))
+    modes = payload.get("modes", {})
+    if resolved_mode_name not in modes:
+        raise KeyError(f"Experiment mode `{resolved_mode_name}` is not defined in {config_path}.")
+
+    mode_payload = modes[resolved_mode_name]
+    preprocessing_payload = mode_payload.get("preprocessing")
+    if preprocessing_payload is None:
+        preprocessing_payload = mode_payload.get("models", {}).get(model_name, {}).get("preprocessing")
+    if preprocessing_payload is None:
+        raise KeyError(
+            f"Experiment mode `{resolved_mode_name}` does not define preprocessing for model `{model_name}`."
+        )
+
+    normalization = normalization_override or preprocessing_payload.get("normalization")
+    apply_bandpass = (
+        apply_bandpass_override
+        if apply_bandpass_override is not None
+        else preprocessing_payload.get("apply_bandpass", True)
+    )
+    config = build_signal_preprocessing_config(
+        model_name=model_name,
+        target_sampling_hz=target_sampling_hz,
+        mode=str(preprocessing_payload.get("mode", resolved_mode_name)),
+        normalization=None if normalization is None else str(normalization),
+        apply_bandpass=bool(apply_bandpass),
+    )
+    config.low_hz = float(preprocessing_payload.get("low_hz", config.low_hz))
+    config.high_hz = float(preprocessing_payload.get("high_hz", config.high_hz))
+    config.filter_order = int(preprocessing_payload.get("filter_order", config.filter_order))
+    return config
+
+
 def default_external_root() -> Path:
     """Return the repository-local folder that stores downloaded external checkpoints."""
 
@@ -56,7 +166,10 @@ def default_external_root() -> Path:
 def load_windows_from_manifest(manifest_path: str | Path | None = None) -> tuple[pd.DataFrame, dict[str, Any]]:
     """Load persisted processed windows from a manifest JSON file."""
 
-    resolved_manifest = Path(manifest_path) if manifest_path is not None else DEFAULT_PROCESSED_MANIFEST
+    if manifest_path is not None:
+        resolved_manifest = Path(manifest_path)
+    else:
+        resolved_manifest = DEFAULT_PROCESSED_MANIFEST if DEFAULT_PROCESSED_MANIFEST.exists() else LEGACY_PROCESSED_MANIFEST
     manifest = load_processed_manifest(resolved_manifest)
     windows = load_processed_windows(manifest["windows_path"])
     return windows, manifest
@@ -78,22 +191,37 @@ def build_window_signal_matrix(
     low_hz: float = 0.5,
     high_hz: float = 12.0,
     filter_order: int = 4,
+    preprocessing_config: SignalPreprocessingConfig | None = None,
 ) -> np.ndarray:
     """Convert window rows into a fixed-length matrix ready for model input."""
 
+    config = preprocessing_config or SignalPreprocessingConfig(
+        mode="harmonized",
+        target_sampling_hz=target_sampling_hz,
+        apply_bandpass=apply_bandpass,
+        normalization="per_window_zscore" if apply_zscore else "none",
+        low_hz=low_hz,
+        high_hz=high_hz,
+        filter_order=filter_order,
+    )
     prepared = [
         prepare_window_signal(
             row=row,
-            target_sampling_hz=target_sampling_hz,
-            apply_zscore=apply_zscore,
-            apply_bandpass=apply_bandpass,
-            low_hz=low_hz,
-            high_hz=high_hz,
-            filter_order=filter_order,
+            target_sampling_hz=config.target_sampling_hz,
+            apply_zscore=config.normalization == "per_window_zscore",
+            apply_bandpass=config.apply_bandpass,
+            low_hz=config.low_hz,
+            high_hz=config.high_hz,
+            filter_order=config.filter_order,
         )
         for row in windows.itertuples(index=False)
     ]
-    return np.stack(prepared).astype(np.float32, copy=False)
+    matrix = np.stack(prepared).astype(np.float32, copy=False)
+    if config.normalization == "person_specific_zscore":
+        return normalize_matrix_by_participant(matrix, windows)
+    if config.normalization == "causal_running_zscore":
+        return normalize_matrix_by_causal_participant_history(matrix, windows)
+    return matrix
 
 
 def prepare_window_signal(
@@ -176,6 +304,50 @@ def zscore_signal(signal_values: np.ndarray) -> np.ndarray:
     return (signal_values - mean_value) / std_value
 
 
+def normalize_matrix_by_participant(matrix: np.ndarray, windows: pd.DataFrame) -> np.ndarray:
+    """Apply participant-specific z-score normalization across exported windows."""
+
+    normalized = matrix.copy()
+    if "participant_id" not in windows.columns:
+        raise KeyError("person_specific_zscore requires a participant_id column.")
+    participants = windows["participant_id"].astype(str).to_numpy()
+    for participant_id in sorted(set(participants)):
+        mask = participants == participant_id
+        values = normalized[mask]
+        mean_value = float(np.mean(values))
+        std_value = float(np.std(values))
+        if np.isfinite(std_value) and std_value > 0:
+            normalized[mask] = (values - mean_value) / std_value
+        else:
+            normalized[mask] = values - mean_value
+    return normalized.astype(np.float32, copy=False)
+
+
+def normalize_matrix_by_causal_participant_history(matrix: np.ndarray, windows: pd.DataFrame) -> np.ndarray:
+    """Apply expanding participant-level z-score using only current and earlier windows."""
+
+    required_columns = {"participant_id", "window_start_ms"}
+    missing_columns = sorted(required_columns - set(windows.columns))
+    if missing_columns:
+        raise KeyError(f"causal_running_zscore requires columns: {missing_columns}")
+
+    normalized = matrix.copy()
+    ordered = windows.reset_index().sort_values(["participant_id", "window_start_ms", "index"])
+    for _, group in ordered.groupby("participant_id", sort=True):
+        history: list[np.ndarray] = []
+        for row in group.itertuples(index=False):
+            window_values = matrix[int(row.index)]
+            history.append(window_values)
+            history_values = np.concatenate(history)
+            mean_value = float(np.mean(history_values))
+            std_value = float(np.std(history_values))
+            if np.isfinite(std_value) and std_value > 0:
+                normalized[int(row.index)] = (window_values - mean_value) / std_value
+            else:
+                normalized[int(row.index)] = window_values - mean_value
+    return normalized.astype(np.float32, copy=False)
+
+
 def bandpass_filter_ppg(
     signal_values: np.ndarray,
     sampling_hz: float,
@@ -236,27 +408,29 @@ def save_embedding_artifacts(
     manifest_dir = manifest_path.parent
 
     np.save(features_path, embeddings)
-    metadata = windows.loc[
-        :,
-        [
-            "window_uid",
-            "split",
-            "participant_id",
-            "session_id",
-            "session_name",
-            "window_index",
-            "window_start_ms",
-            "window_end_ms",
-            "window_length_s",
-            "stride_s",
-            "ppg_sampling_hz",
-            "ppg_sample_count",
-            "reference_sample_count",
-            "label_hr_bpm",
-            "label_aggregation",
-            "reference_source",
-        ],
-    ].copy()
+    metadata_columns = [
+        "window_uid",
+        "split",
+        "participant_id",
+        "session_id",
+        "session_name",
+        "window_index",
+        "window_start_ms",
+        "window_end_ms",
+        "window_length_s",
+        "stride_s",
+        "ppg_sampling_hz",
+        "ppg_sample_count",
+        "reference_sample_count",
+        "valid_beat_count",
+        "label_hr_bpm",
+        "label_method",
+        "label_aggregation",
+        "reference_source",
+        "ppg_inverted",
+        "ppg_canonical_source",
+    ]
+    metadata = windows.loc[:, [column for column in metadata_columns if column in windows.columns]].copy()
     metadata.to_csv(metadata_path, index=False)
 
     summary = EmbeddingExportSummary(
