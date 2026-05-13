@@ -6,7 +6,14 @@ from dataclasses import asdict, dataclass
 
 import pandas as pd
 
-from src.utils.metrics import mean_absolute_error, prediction_coverage, root_mean_squared_error
+from src.utils.metrics import (
+    catastrophic_error_rate,
+    mean_absolute_error,
+    median_absolute_error,
+    percentile_absolute_error,
+    prediction_coverage,
+    root_mean_squared_error,
+)
 
 
 @dataclass(slots=True)
@@ -18,6 +25,9 @@ class EvaluationSummary:
     coverage: float
     mae: float
     rmse: float
+    median_absolute_error: float
+    p95_absolute_error: float
+    catastrophic_error_rate_20bpm: float
 
     def to_dict(self) -> dict[str, float | int]:
         """Convert the summary into a JSON-serializable dictionary."""
@@ -45,4 +55,7 @@ def evaluate_prediction_frame(
         coverage=prediction_coverage(y_true, y_pred),
         mae=mean_absolute_error(y_true, y_pred),
         rmse=root_mean_squared_error(y_true, y_pred),
+        median_absolute_error=median_absolute_error(y_true, y_pred),
+        p95_absolute_error=percentile_absolute_error(y_true, y_pred, percentile=95.0),
+        catastrophic_error_rate_20bpm=catastrophic_error_rate(y_true, y_pred, threshold_bpm=20.0),
     )

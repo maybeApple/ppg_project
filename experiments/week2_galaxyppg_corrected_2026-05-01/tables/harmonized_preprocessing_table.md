@@ -1,0 +1,10 @@
+| Model | Preprocessing mode | Normalization | Probe / Regressor | MAE | RMSE | Median AE | P95 AE | Catastrophic error >20 bpm | n_windows |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| pulseppg | harmonized | per_window_zscore | random_forest | 6.8176 | 11.3431 | 3.6610 | 25.7977 | 0.0799 | 7631 |
+| peak_based | harmonized | NA | classical_peak | 7.8658 | 16.1052 | 2.8210 | 37.1319 | 0.1060 | 7629 |
+| pulseppg | harmonized | per_window_zscore | ridge | 8.0508 | 12.4977 | 4.8660 | 27.9149 | 0.0921 | 7631 |
+| pulseppg | harmonized | per_window_zscore | linear | 8.1390 | 12.5691 | 4.9827 | 28.1586 | 0.0932 | 7631 |
+| papagei | harmonized | per_window_zscore | ridge | 11.4621 | 16.5681 | 8.0845 | 35.8505 | 0.1407 | 7631 |
+| papagei | harmonized | per_window_zscore | random_forest | 11.4710 | 16.4607 | 8.1681 | 35.6672 | 0.1389 | 7631 |
+| papagei | harmonized | per_window_zscore | linear | 11.5290 | 16.7805 | 8.1172 | 36.0486 | 0.1400 | 7631 |
+| spectral | harmonized | NA | classical_spectral | 18.6033 | 29.5835 | 6.6629 | 63.0116 | 0.3285 | 7631 |

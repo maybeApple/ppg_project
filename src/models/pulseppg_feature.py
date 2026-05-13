@@ -48,6 +48,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", type=str, default=None)
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--max-windows", type=int, default=None)
+    parser.add_argument(
+        "--ppg-source",
+        choices=["canonical", "raw"],
+        default="canonical",
+        help="Use canonical inverted PPG or raw non-inverted PPG from processed windows.",
+    )
     parser.add_argument("--experiment-config", type=Path, default=Path("configs") / "experiment_modes.json")
     parser.add_argument("--experiment-mode", choices=["harmonized", "model_faithful"], default=None)
     parser.add_argument("--preprocessing-mode", choices=["harmonized", "model_faithful"], default="harmonized")
@@ -168,6 +174,13 @@ def main() -> None:
     args = parse_args()
     windows, processed_manifest = load_windows_from_manifest(args.manifest_path)
     windows = select_window_subset(windows, max_windows=args.max_windows)
+    if args.ppg_source == "raw":
+        if "ppg_raw_values" not in windows.columns:
+            raise KeyError("`--ppg-source raw` requires processed windows with `ppg_raw_values`.")
+        windows = windows.copy()
+        windows["ppg_values"] = windows["ppg_raw_values"]
+        if "ppg_inverted" in windows.columns:
+            windows["ppg_inverted"] = False
     normalization = "none" if args.no_zscore else args.normalization
     if args.experiment_config is not None and args.experiment_config.exists():
         preprocessing_config = load_signal_preprocessing_config(
@@ -215,6 +228,8 @@ def main() -> None:
             "apply_zscore": preprocessing_config.normalization != "none",
             "batch_size": args.batch_size,
             "device": args.device,
+            "ppg_source": args.ppg_source,
+            "ppg_inverted": args.ppg_source == "canonical" and bool(processed_manifest.get("ppg_inverted", True)),
             "model_code_strategy": "vendored_minimal_source",
             "model_code_path": str(checkpoint_info.model_code_path),
             "upstream_repository": UPSTREAM_REPOSITORY,

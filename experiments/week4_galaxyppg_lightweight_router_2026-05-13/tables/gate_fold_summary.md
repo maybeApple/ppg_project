@@ -1,0 +1,17 @@
+| feature_set | fold | heldout_participant | n_train | n_test | positive_rate_train | estimator_type |
+| --- | --- | --- | --- | --- | --- | --- |
+| motion_only | 1 | P04 | 6066 | 1563 | 0.4769 | logistic_regression |
+| motion_only | 2 | P07 | 6139 | 1490 | 0.4530 | logistic_regression |
+| motion_only | 3 | P16 | 6125 | 1504 | 0.4601 | logistic_regression |
+| motion_only | 4 | P17 | 6123 | 1506 | 0.4602 | logistic_regression |
+| motion_only | 5 | P18 | 6063 | 1566 | 0.5275 | logistic_regression |
+| quality_only | 1 | P04 | 6066 | 1563 | 0.4769 | logistic_regression |
+| quality_only | 2 | P07 | 6139 | 1490 | 0.4530 | logistic_regression |
+| quality_only | 3 | P16 | 6125 | 1504 | 0.4601 | logistic_regression |
+| quality_only | 4 | P17 | 6123 | 1506 | 0.4602 | logistic_regression |
+| quality_only | 5 | P18 | 6063 | 1566 | 0.5275 | logistic_regression |
+| motion_quality | 1 | P04 | 6066 | 1563 | 0.4769 | logistic_regression |
+| motion_quality | 2 | P07 | 6139 | 1490 | 0.4530 | logistic_regression |
+| motion_quality | 3 | P16 | 6125 | 1504 | 0.4601 | logistic_regression |
+| motion_quality | 4 | P17 | 6123 | 1506 | 0.4602 | logistic_regression |
+| motion_quality | 5 | P18 | 6063 | 1566 | 0.5275 | logistic_regression |
