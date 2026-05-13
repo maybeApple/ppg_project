@@ -1,6 +1,6 @@
 # Week 2-4 Deliverable Report
 
-This report covers only Week 2, Week 3, and Week 4 deliverables from `new_plan.docx`. It does not summarize Week 1 or plan Week 5+ work.
+This report covers only Week 2, Week 3, and Week 4 deliverables from `new_plan.docx`. 
 
 ## Scope
 
