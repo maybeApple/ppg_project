@@ -39,6 +39,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--min-reference-samples", type=int, default=1)
     parser.add_argument("--dataset-root", type=Path, default=None)
     parser.add_argument("--processed-manifest", type=Path, default=None)
+    parser.add_argument(
+        "--ppg-source",
+        choices=["canonical", "raw"],
+        default="canonical",
+        help="Use canonical inverted PPG or raw non-inverted PPG from processed windows.",
+    )
     parser.add_argument("--split-config", type=Path, default=None)
     parser.add_argument("--test-size", type=float, default=0.2)
     parser.add_argument("--random-state", type=int, default=42)
@@ -85,6 +91,7 @@ def main() -> None:
             "mode": "processed_manifest",
             "processed_manifest_path": str(Path(processed_manifest["manifest_path"]).resolve()),
             "split_config_path": None if fixed_split is None else str(fixed_split.split_config_path),
+            "ppg_source": args.ppg_source,
         }
     else:
         processed_manifest = {}
@@ -115,15 +122,27 @@ def main() -> None:
             "mode": "raw_dataset",
             "dataset_root": str(args.dataset_root) if args.dataset_root is not None else "",
             "split_config_path": None if fixed_split is None else str(fixed_split.split_config_path),
+            "ppg_source": args.ppg_source,
         }
 
     if test_windows.empty:
         raise RuntimeError("The selected baseline run has zero test windows, so evaluation cannot proceed.")
 
+    ppg_inverted_for_run = bool(processed_manifest.get("ppg_inverted")) if args.ppg_source == "canonical" else False
+    if args.ppg_source == "raw":
+        if "ppg_raw_values" not in test_windows.columns:
+            raise KeyError("`--ppg-source raw` requires processed windows with `ppg_raw_values`.")
+        test_windows = test_windows.copy()
+        test_windows["ppg_values"] = test_windows["ppg_raw_values"]
+        if "ppg_inverted" in test_windows.columns:
+            test_windows["ppg_inverted"] = False
+
     if args.method == "peak":
         predictions = apply_peak_detection_baseline(test_windows)
     else:
         predictions = apply_spectral_baseline(test_windows)
+    predictions["ppg_source"] = args.ppg_source
+    predictions["inversion"] = ppg_inverted_for_run
 
     summary = evaluate_prediction_frame(predictions)
     metadata = {
@@ -145,7 +164,8 @@ def main() -> None:
                 min_reference_samples=args.min_reference_samples,
             ).to_dict(),
         ),
-        "ppg_inverted": processed_manifest.get("ppg_inverted"),
+        "ppg_inverted": ppg_inverted_for_run,
+        "ppg_source": args.ppg_source,
         "ppg_canonical_source": processed_manifest.get("ppg_canonical_source"),
         "test_size": args.test_size,
         "random_state": args.random_state,

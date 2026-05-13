@@ -1,0 +1,31 @@
+{
+  "schema_version": "week2_benchmark_config_v1",
+  "dataset": "GalaxyPPG",
+  "evaluation": "subject_independent",
+  "split": "fixed_participant_holdout_with_grouped_validation",
+  "split_config": "configs/galaxyppg_submission_split.json",
+  "processed_manifest": "data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json",
+  "conditions": [
+    {
+      "ppg_inversion": true,
+      "ppg_source": "canonical"
+    },
+    {
+      "ppg_inversion": false,
+      "ppg_source": "raw"
+    }
+  ],
+  "models": [
+    "peak_based",
+    "spectral",
+    "pulseppg_linear_or_ridge",
+    "papagei_linear_or_ridge"
+  ],
+  "metrics": [
+    "MAE",
+    "RMSE",
+    "median_absolute_error",
+    "p95_absolute_error",
+    "catastrophic_error_rate_20bpm"
+  ]
+}

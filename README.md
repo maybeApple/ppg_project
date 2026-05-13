@@ -452,6 +452,165 @@ Generate evaluation plots for a saved baseline run:
 python -m src.baseline.plot_baseline_results --result-dir experiments/reproduced_corrected_2026-04-24/baseline_peak
 ```
 
+## Week 2 Corrected GalaxyPPG Benchmark
+
+Week 2 outputs are stored under:
+
+```text
+experiments/week2_galaxyppg_corrected_2026-05-01/
+```
+
+The Week 2 configs are:
+
+```text
+configs/week2_galaxyppg_harmonized.json
+configs/week2_galaxyppg_model_faithful.json
+configs/week2_galaxyppg_inversion_ablation.json
+```
+
+Run the corrected GalaxyPPG harmonized classical baselines:
+
+```bash
+python -m src.baseline.run_baseline --processed-manifest data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json --split-config configs/galaxyppg_submission_split.json --method peak --ppg-source canonical --output-dir experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/baseline_peak
+python -m src.baseline.run_baseline --processed-manifest data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json --split-config configs/galaxyppg_submission_split.json --method spectral --ppg-source canonical --output-dir experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/baseline_spectral
+```
+
+Run the inversion ablation for classical baselines:
+
+```bash
+python -m src.baseline.run_baseline --processed-manifest data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json --split-config configs/galaxyppg_submission_split.json --method peak --ppg-source raw --output-dir experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/baseline_peak_raw
+python -m src.baseline.run_baseline --processed-manifest data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json --split-config configs/galaxyppg_submission_split.json --method spectral --ppg-source raw --output-dir experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/baseline_spectral_raw
+```
+
+Extract frozen embeddings for harmonized foundation-model runs:
+
+```bash
+python -m src.models.pulseppg_feature --manifest-path data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json --experiment-config configs/experiment_modes.json --experiment-mode harmonized --output-dir experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_features --batch-size 256 --device cpu
+python -m src.models.papagei_feature --manifest-path data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json --experiment-config configs/experiment_modes.json --experiment-mode harmonized --output-dir experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/papagei_features --batch-size 128 --device cpu
+```
+
+Train probes and practical upper-bound regressors from a saved feature manifest:
+
+```bash
+python -m src.regression.train_regressor --feature-manifest experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_features/pulseppg_manifest.json --regressor ridge --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_ridge
+python -m src.regression.train_regressor --feature-manifest experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_features/pulseppg_manifest.json --regressor random_forest --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_random_forest
+```
+
+For model-faithful PulsePPG, rerun feature extraction with each normalization variant:
+
+```bash
+python -m src.models.pulseppg_feature --manifest-path data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json --experiment-config configs/experiment_modes.json --experiment-mode model_faithful --normalization causal_running_zscore --output-dir experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_features_causal_running_zscore --batch-size 256 --device cpu
+```
+
+For foundation-model inversion ablations, extract raw non-inverted features with `--ppg-source raw` and train the same probe:
+
+```bash
+python -m src.models.pulseppg_feature --manifest-path data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json --experiment-config configs/experiment_modes.json --experiment-mode harmonized --ppg-source raw --output-dir experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/pulseppg_features_raw --batch-size 256 --device cpu
+python -m src.regression.train_regressor --feature-manifest experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/pulseppg_features_raw/pulseppg_manifest.json --regressor ridge --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/pulseppg_ridge_raw
+```
+
+After all selected runs are present, generate standardized prediction files, metrics, tables, figures, and the Week 2 memo:
+
+```bash
+python -m src.utils.build_week2_artifacts --search-root experiments/week2_galaxyppg_corrected_2026-05-01/runs --output-root experiments/week2_galaxyppg_corrected_2026-05-01 --tag-name week2-galaxyppg-corrected-2026-05-01
+```
+
+Expected Week 2 summary artifacts:
+
+```text
+experiments/week2_galaxyppg_corrected_2026-05-01/predictions/week2_all_standardized_predictions.csv
+experiments/week2_galaxyppg_corrected_2026-05-01/metrics/overall_metrics.csv
+experiments/week2_galaxyppg_corrected_2026-05-01/metrics/participant_level_metrics.csv
+experiments/week2_galaxyppg_corrected_2026-05-01/metrics/activity_level_metrics.csv
+experiments/week2_galaxyppg_corrected_2026-05-01/tables/main_benchmark_table.csv
+experiments/week2_galaxyppg_corrected_2026-05-01/tables/inversion_ablation_table.csv
+experiments/week2_galaxyppg_corrected_2026-05-01/week2_memo.md
+```
+
+## Week 3 Regime Analysis and Oracle Routing
+
+Week 3 uses the corrected GalaxyPPG Week 2 predictions to test whether estimator dominance is regime-dependent before training any deployable router. The analysis pairs a selected classical expert with a selected foundation-model expert on shared valid windows, computes per-window error gaps, adds activity/participant/HR-range/motion/PPG-quality regime features, and reports an oracle router upper bound.
+
+Build the default Week 3 artifact set:
+
+```bash
+python -m src.utils.build_week3_artifacts --week2-root experiments/week2_galaxyppg_corrected_2026-05-01 --output-root experiments/week3_galaxyppg_regime_oracle_2026-05-13
+```
+
+The default selection chooses the lowest-MAE inverted classical run and the lowest-MAE inverted foundation-model run from the Week 2 prediction table. You can override the expert choice, for example:
+
+```bash
+python -m src.utils.build_week3_artifacts --foundation-model pulseppg --foundation-regressor ridge --foundation-preprocessing-mode harmonized
+```
+
+Expected Week 3 artifacts:
+
+```text
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/predictions/week3_window_regime_expert_errors.csv
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/predictions/week3_oracle_router_predictions.csv
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/tables/selected_expert_oracle_summary.csv
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/tables/oracle_all_pairs_table.csv
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/tables/regime_by_activity.csv
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/tables/regime_by_participant.csv
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/tables/regime_by_hr_range.csv
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/tables/regime_by_motion_intensity.csv
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/tables/regime_by_ppg_quality.csv
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/tables/regime_by_motion_and_quality.csv
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/figures/oracle_vs_selected_experts.png
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/figures/winner_rate_by_activity.png
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/figures/motion_quality_error_gap_heatmap.png
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/figures/window_error_gap_distribution.png
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/week3_regime_analysis.md
+```
+
+## Week 4 Lightweight Routing
+
+Week 4 trains the first lightweight motion- and quality-aware router on GalaxyPPG. It uses the Week 3 paired expert predictions and inference-time regime features, then evaluates participant-level out-of-fold gates with leave-one-participant-out routing predictions.
+
+The routed system intentionally remains simple and interpretable:
+
+- `hard_gate`: logistic gate chooses either the classical expert or foundation-model expert.
+- `soft_gate`: logistic gate probability is used as the foundation-model weight, and the two expert predictions are averaged.
+- feature ablations: `motion_only`, `quality_only`, and `motion_quality`.
+
+Build the Week 4 artifact set:
+
+```bash
+python -m src.utils.build_week4_artifacts --week3-root experiments/week3_galaxyppg_regime_oracle_2026-05-13 --output-root experiments/week4_galaxyppg_lightweight_router_2026-05-13
+```
+
+Routing feature groups:
+
+```text
+motion_only:
+  acc_norm_mean, acc_norm_std, acc_dominant_frequency_hz,
+  acc_cadence_band_power_fraction
+
+quality_only:
+  ppg_amplitude_range, ppg_clipping_rate, ppg_flatline_rate,
+  ppg_autocorr_peak_strength, ppg_spectral_entropy,
+  ppg_spectral_peak_sharpness, beat_count_consistency,
+  peak_spectral_disagreement_bpm
+
+motion_quality:
+  all motion and quality features
+```
+
+Expected Week 4 artifacts:
+
+```text
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/predictions/week4_routed_predictions.csv
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/tables/routing_summary.csv
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/tables/gate_fold_summary.csv
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/tables/gate_feature_coefficients.csv
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/tables/participant_level_routing_metrics.csv
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/tables/activity_level_routing_metrics.csv
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/figures/hard_soft_router_mae.png
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/figures/best_router_error_cdf.png
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/figures/combined_gate_feature_coefficients.png
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/week4_lightweight_router.md
+```
+
 ## Full Reproduction Order
 
 1. Install dependencies.
