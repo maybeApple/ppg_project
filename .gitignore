@@ -10,16 +10,40 @@ Thumbs.db
 *.py[cod]
 *.pyo
 .ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
 # Local notes and reports not part of the reproducible repository
 AGENT.md
 Current.md
+new_plan.docx
+week2_topic.md
 ppg-needtodo*.docx
 reports/
+_trash_review/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+*.old
+*.out
+
+# Python packaging / build artifacts
+build/
+dist/
+*.egg-info/
 
 # Raw dataset stays local; keep only placement/readme notes
 data/raw/GalaxyPPG/*
 !data/raw/GalaxyPPG/README.md
+data/raw/PPG-DaLiA/*
+!data/raw/PPG-DaLiA/README.md
+data/raw/WildPPG-wrist/*
+!data/raw/WildPPG-wrist/README.md
 
 # Downloaded checkpoints stay local; the repository only keeps placeholder folders
 external/*
@@ -35,3 +59,13 @@ experiments/papagei_results/2026-03-18/papagei_metadata.csv
 
 # Local verification scratch space
 experiments/_verification/
+
+# Regenerable Week 2+ experiment packages and frozen copies
+experiments/reproduced_corrected_*/
+experiments/reproducibility_manifest.json
+experiments/reproducibility_manifest.md
+experiments/week2_galaxyppg_corrected_*/
+experiments/week3_galaxyppg_regime_oracle_*/
+experiments/week4_galaxyppg_lightweight_router_*/
+experiments/week7_final_statistics/
+experiments/final_frozen_results_*/

@@ -39,6 +39,18 @@ from .labels import (
     compute_window_label,
 )
 from .preprocessing import AlignedSession, SessionInterval, align_participant_sessions
+from .ppgdalia_loader import (
+    DATASET_NAME as PPGDALIA_DATASET_NAME,
+    list_ppgdalia_participants,
+    load_ppgdalia_participant_data,
+    resolve_ppgdalia_root,
+)
+from .wildppg_loader import (
+    DATASET_NAME as WILDPPG_DATASET_NAME,
+    list_wildppg_participants,
+    load_wildppg_participant_data,
+    resolve_wildppg_root,
+)
 from .splits import (
     FixedSplitConfig,
     ValidationFold,
@@ -68,8 +80,10 @@ __all__ = [
     "POLAR_PHONE_TIMESTAMP_OFFSET_MS",
     "ProcessedDatasetManifest",
     "ParticipantData",
+    "PPGDALIA_DATASET_NAME",
     "SessionInterval",
     "ValidationFold",
+    "WILDPPG_DATASET_NAME",
     "WindowLabel",
     "annotate_window_dataset",
     "align_participant_sessions",
@@ -90,6 +104,8 @@ __all__ = [
     "default_stride_rationale",
     "describe_validation_folds",
     "list_participants",
+    "list_ppgdalia_participants",
+    "list_wildppg_participants",
     "load_galaxy_watch_accelerometer",
     "load_galaxy_watch_ppg",
     "load_fixed_split_config",
@@ -98,10 +114,14 @@ __all__ = [
     "load_processed_windows",
     "load_metadata",
     "load_participant_data",
+    "load_ppgdalia_participant_data",
     "load_polar_ecg",
+    "load_wildppg_participant_data",
     "resolve_manifest_path",
+    "resolve_ppgdalia_root",
     "resolve_dataset_root",
     "resolve_split_config_path",
+    "resolve_wildppg_root",
     "save_processed_dataset",
     "split_by_participant",
 ]

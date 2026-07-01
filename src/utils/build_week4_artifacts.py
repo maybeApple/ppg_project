@@ -6,10 +6,12 @@ import argparse
 import json
 import math
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import joblib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -90,7 +92,9 @@ def main() -> None:
     metrics_dir = output_root / "metrics"
     tables_dir = output_root / "tables"
     figures_dir = output_root / "figures"
-    for path in [predictions_dir, metrics_dir, tables_dir, figures_dir]:
+    features_dir = output_root / "features"
+    models_dir = output_root / "models"
+    for path in [predictions_dir, metrics_dir, tables_dir, figures_dir, features_dir, models_dir]:
         path.mkdir(parents=True, exist_ok=True)
 
     week3_path = args.week3_root / "predictions" / "week3_window_regime_expert_errors.csv"
@@ -101,27 +105,47 @@ def main() -> None:
     ).reset_index(drop=True)
     if windows.empty:
         raise RuntimeError("No valid paired windows were available for Week 4 routing.")
+    export_router_feature_frame(windows, features_dir / "week4_motion_quality_features.csv")
 
     routed_frames: list[pd.DataFrame] = []
     coefficient_frames: list[pd.DataFrame] = []
     fold_frames: list[pd.DataFrame] = []
+    assignment_frames: list[pd.DataFrame] = []
+    model_manifest_rows: list[dict[str, Any]] = []
     for feature_set_name, feature_columns in FEATURE_SETS.items():
-        routed, fold_summary, coefficients = train_out_of_fold_router(
+        routed, fold_summary, coefficients, assignments, model_rows = train_out_of_fold_router(
             windows=windows,
             feature_set_name=feature_set_name,
             feature_columns=feature_columns,
             random_state=args.random_state,
+            models_dir=models_dir,
         )
         routed_frames.append(routed)
         fold_frames.append(fold_summary)
         coefficient_frames.append(coefficients)
+        assignment_frames.append(assignments)
+        model_manifest_rows.extend(model_rows)
 
     routed_predictions = pd.concat(routed_frames, ignore_index=True)
     routed_predictions.to_csv(predictions_dir / "week4_routed_predictions.csv", index=False)
+    routed_predictions.to_csv(output_root / "predictions.csv", index=False)
 
     fold_table = pd.concat(fold_frames, ignore_index=True)
     fold_table.to_csv(tables_dir / "gate_fold_summary.csv", index=False)
     write_markdown_table(fold_table, tables_dir / "gate_fold_summary.md")
+
+    assignment_table = pd.concat(assignment_frames, ignore_index=True)
+    assignment_table.to_csv(tables_dir / "router_fold_assignments.csv", index=False)
+    write_markdown_table(assignment_table.head(50), tables_dir / "router_fold_assignments_preview.md")
+
+    model_manifest = {
+        "schema_version": "week4_router_model_manifest_v1",
+        "model_files": model_manifest_rows,
+    }
+    (models_dir / "router_model_manifest.json").write_text(
+        json.dumps(model_manifest, indent=2),
+        encoding="utf-8",
+    )
 
     coefficient_table = pd.concat(coefficient_frames, ignore_index=True)
     coefficient_table.to_csv(tables_dir / "gate_feature_coefficients.csv", index=False)
@@ -131,6 +155,10 @@ def main() -> None:
     summary.to_csv(tables_dir / "routing_summary.csv", index=False)
     write_markdown_table(summary, tables_dir / "routing_summary.md")
     (metrics_dir / "routing_summary.json").write_text(
+        json.dumps(summary.to_dict(orient="records"), indent=2),
+        encoding="utf-8",
+    )
+    (output_root / "metrics.json").write_text(
         json.dumps(summary.to_dict(orient="records"), indent=2),
         encoding="utf-8",
     )
@@ -151,10 +179,45 @@ def main() -> None:
         summary=summary,
         coefficient_table=coefficient_table,
     )
+    write_reproducibility_files(
+        output_root=output_root,
+        argv=sys.argv,
+        week3_root=args.week3_root,
+        week2_predictions=args.week2_predictions,
+        feature_path=features_dir / "week4_motion_quality_features.csv",
+        predictions_path=predictions_dir / "week4_routed_predictions.csv",
+        metrics_path=metrics_dir / "routing_summary.json",
+        fold_assignments_path=tables_dir / "router_fold_assignments.csv",
+        model_manifest_path=models_dir / "router_model_manifest.json",
+    )
 
     print(f"routed_predictions={predictions_dir / 'week4_routed_predictions.csv'}")
     print(f"summary={tables_dir / 'routing_summary.csv'}")
     print(f"memo={output_root / 'week4_lightweight_router.md'}")
+
+
+def export_router_feature_frame(windows: pd.DataFrame, output_path: Path) -> None:
+    """Persist the motion and quality feature table consumed by the router."""
+
+    columns = [
+        "window_key",
+        "dataset",
+        "participant_id",
+        "session_id",
+        "activity",
+        "window_id",
+        "window_start_time",
+        "window_end_time",
+        "y_true_hr",
+        "classical_pred_hr",
+        "foundation_pred_hr",
+        "classical_abs_error",
+        "foundation_abs_error",
+        "winner",
+        *FEATURE_SETS["motion_quality"],
+    ]
+    available = [column for column in columns if column in windows.columns]
+    windows.loc[:, available].to_csv(output_path, index=False)
 
 
 def augment_quality_features(windows: pd.DataFrame, week2_predictions_path: Path) -> pd.DataFrame:
@@ -217,7 +280,8 @@ def train_out_of_fold_router(
     feature_set_name: str,
     feature_columns: list[str],
     random_state: int,
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    models_dir: Path,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, list[dict[str, Any]]]:
     frame = windows.copy()
     x = frame[feature_columns].apply(pd.to_numeric, errors="coerce")
     y = (frame["foundation_abs_error"] < frame["classical_abs_error"]).astype(int).to_numpy()
@@ -227,12 +291,17 @@ def train_out_of_fold_router(
     soft_weight = np.full(len(frame), np.nan, dtype=float)
     fold_rows: list[dict[str, Any]] = []
     coefficient_rows: list[dict[str, Any]] = []
+    assignment_rows: list[dict[str, Any]] = []
+    model_rows: list[dict[str, Any]] = []
 
     for fold_index, (train_idx, test_idx) in enumerate(logo.split(x, y, groups), start=1):
         heldout = sorted(set(groups[test_idx]))
         y_train = y[train_idx]
+        estimator: Pipeline | None = None
+        fallback_probability: float | None = None
         if len(np.unique(y_train)) < 2:
             positive_rate = float(np.mean(y_train))
+            fallback_probability = positive_rate
             probability = np.full(len(test_idx), positive_rate, dtype=float)
             fold_result = FoldResult(
                 heldout_participant=",".join(heldout),
@@ -269,6 +338,22 @@ def train_out_of_fold_router(
                 coefficients={column: float(value) for column, value in zip(feature_columns, gate.coef_[0])},
             )
 
+        safe_heldout = "_".join(heldout).replace("/", "_").replace("\\", "_")
+        model_path = models_dir / f"{feature_set_name}_fold_{fold_index:02d}_{safe_heldout}.joblib"
+        joblib.dump(
+            {
+                "schema_version": "week4_router_fold_model_v1",
+                "feature_set": feature_set_name,
+                "feature_columns": feature_columns,
+                "fold": fold_index,
+                "heldout_participant": fold_result.heldout_participant,
+                "estimator_type": fold_result.estimator_type,
+                "estimator": estimator,
+                "fallback_probability": fallback_probability,
+                "positive_label": "foundation_abs_error < classical_abs_error",
+            },
+            model_path,
+        )
         soft_weight[test_idx] = probability
         hard_pred[test_idx] = (probability >= 0.5).astype(float)
         fold_row = {
@@ -279,8 +364,30 @@ def train_out_of_fold_router(
             "n_test": fold_result.n_test,
             "positive_rate_train": fold_result.positive_rate_train,
             "estimator_type": fold_result.estimator_type,
+            "model_path": model_path.as_posix(),
         }
         fold_rows.append(fold_row)
+        model_rows.append(
+            {
+                "feature_set": feature_set_name,
+                "fold": fold_index,
+                "heldout_participant": fold_result.heldout_participant,
+                "estimator_type": fold_result.estimator_type,
+                "feature_columns": feature_columns,
+                "model_path": model_path.as_posix(),
+            }
+        )
+        for row_index in test_idx:
+            assignment_rows.append(
+                {
+                    "feature_set": feature_set_name,
+                    "fold": fold_index,
+                    "window_key": frame.iloc[row_index]["window_key"],
+                    "participant_id": frame.iloc[row_index]["participant_id"],
+                    "heldout_participant": fold_result.heldout_participant,
+                    "split_role": "test",
+                }
+            )
         for feature_name, coefficient in fold_result.coefficients.items():
             coefficient_rows.append(
                 {
@@ -299,7 +406,13 @@ def train_out_of_fold_router(
         hard_choose_foundation=hard_pred.astype(bool),
         soft_foundation_weight=soft_weight,
     )
-    return routed, pd.DataFrame(fold_rows), pd.DataFrame(coefficient_rows)
+    return (
+        routed,
+        pd.DataFrame(fold_rows),
+        pd.DataFrame(coefficient_rows),
+        pd.DataFrame(assignment_rows),
+        model_rows,
+    )
 
 
 def build_routed_prediction_rows(
@@ -355,6 +468,51 @@ def build_routed_prediction_rows(
         pd.NA,
     )
     return routed
+
+
+def write_reproducibility_files(
+    output_root: Path,
+    argv: list[str],
+    week3_root: Path,
+    week2_predictions: Path,
+    feature_path: Path,
+    predictions_path: Path,
+    metrics_path: Path,
+    fold_assignments_path: Path,
+    model_manifest_path: Path,
+) -> None:
+    """Write generic run_config and run_log files for the Week 4 routed package."""
+
+    run_config = {
+        "schema_version": "run_config_v1",
+        "run_type": "week4_lightweight_router",
+        "module": "src.utils.build_week4_artifacts",
+        "argv": argv,
+        "inputs": {
+            "week3_root": week3_root.as_posix(),
+            "week2_predictions": week2_predictions.as_posix(),
+        },
+        "feature_sets": FEATURE_SETS,
+        "artifacts": {
+            "motion_quality_features_csv": feature_path.as_posix(),
+            "router_predictions_csv": predictions_path.as_posix(),
+            "router_metrics_json": metrics_path.as_posix(),
+            "fold_assignments_csv": fold_assignments_path.as_posix(),
+            "router_model_manifest_json": model_manifest_path.as_posix(),
+        },
+    }
+    run_log = {
+        **run_config,
+        "metrics": json.loads(metrics_path.read_text(encoding="utf-8")),
+    }
+    (output_root / "run_config.json").write_text(
+        json.dumps(run_config, indent=2),
+        encoding="utf-8",
+    )
+    (output_root / "run_log.json").write_text(
+        json.dumps(run_log, indent=2),
+        encoding="utf-8",
+    )
 
 
 def summarize_methods(windows: pd.DataFrame, routed: pd.DataFrame) -> pd.DataFrame:
@@ -601,11 +759,15 @@ The Week 3 oracle table showed the main routing pair should remain `peak_based` 
 ## Artifacts
 
 - Routed predictions: `predictions/week4_routed_predictions.csv`
+- Motion/quality feature CSV: `features/week4_motion_quality_features.csv`
 - Main comparison table: `tables/routing_summary.csv`
 - Gate fold summary: `tables/gate_fold_summary.csv`
+- Per-window fold assignments: `tables/router_fold_assignments.csv`
 - Gate coefficients: `tables/gate_feature_coefficients.csv`
 - Participant-level routing metrics: `tables/participant_level_routing_metrics.csv`
 - Activity-level routing metrics: `tables/activity_level_routing_metrics.csv`
+- Trained router fold models: `models/*.joblib`
+- Router model manifest: `models/router_model_manifest.json`
 - Figures: `figures/hard_soft_router_mae.png`, `figures/best_router_error_cdf.png`, `figures/combined_gate_feature_coefficients.png`
 
 ## Limitations

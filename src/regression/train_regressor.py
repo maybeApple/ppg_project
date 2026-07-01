@@ -330,6 +330,7 @@ def resolve_training_split_config_path(
             stored_split_config = processed_manifest.get("split_config_path")
             if stored_split_config:
                 return Path(stored_split_config)
+            return None
 
     default_path = default_split_config_path()
     return default_path if default_path.exists() else None
@@ -385,7 +386,48 @@ def save_run_log(
         "metrics": metrics,
     }
     log_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    (Path(output_dir) / "run_log.json").write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
     return log_path
+
+
+def save_generic_run_files(
+    output_dir: str | Path,
+    argv: list[str],
+    feature_manifest_path: str,
+    metrics: dict[str, object],
+    artifacts: RegressionArtifacts,
+) -> None:
+    """Write generic reproducibility filenames expected by archived run folders."""
+
+    target_dir = Path(output_dir)
+    prediction_frame = pd.read_csv(artifacts.predictions_path)
+    prediction_frame.to_csv(target_dir / "predictions.csv", index=False)
+    (target_dir / "metrics.json").write_text(
+        json.dumps(metrics, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    run_config = {
+        "schema_version": "run_config_v1",
+        "run_type": "embedding_regression",
+        "module": "src.regression.train_regressor",
+        "argv": argv,
+        "feature_manifest_path": feature_manifest_path,
+        "model_name": artifacts.model_name,
+        "regressor": artifacts.regressor,
+        "artifacts": {
+            "predictions_csv": str(target_dir / "predictions.csv"),
+            "metrics_json": str(target_dir / "metrics.json"),
+            "estimator_path": artifacts.estimator_path,
+            "run_log_json": str(target_dir / "run_log.json"),
+        },
+    }
+    (target_dir / "run_config.json").write_text(
+        json.dumps(run_config, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
 
 
 def main() -> None:
@@ -458,6 +500,13 @@ def main() -> None:
         output_dir=output_dir,
         model_name=str(feature_manifest["model_name"]),
         regressor_name=args.regressor,
+        argv=sys.argv,
+        feature_manifest_path=str(args.feature_manifest),
+        metrics=metrics,
+        artifacts=artifacts,
+    )
+    save_generic_run_files(
+        output_dir=output_dir,
         argv=sys.argv,
         feature_manifest_path=str(args.feature_manifest),
         metrics=metrics,

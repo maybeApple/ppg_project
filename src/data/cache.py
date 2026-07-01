@@ -50,6 +50,7 @@ class ProcessedDatasetManifest:
 
     artifact_name: str
     created_at_utc: str
+    dataset: str
     dataset_root: str
     canonical_schema: dict[str, object]
     reference_source: str
@@ -109,11 +110,13 @@ def build_artifact_name(
     stride_seconds: float,
     label_method: str,
     label_aggregation: str,
+    dataset_name: str = "GalaxyPPG",
 ) -> str:
     """Build a compact, filesystem-safe artifact name from dataset settings."""
 
+    dataset_token = _format_name_token(dataset_name)
     return (
-        f"galaxyppg_{reference_source}_"
+        f"{dataset_token}_{reference_source}_"
         f"w{_format_float_token(window_seconds)}_"
         f"s{_format_float_token(stride_seconds)}_"
         f"{label_method}_"
@@ -180,6 +183,7 @@ def save_processed_dataset(
     validation_strategy: dict[str, object] | None = None,
     validation_folds: list[dict[str, object]] | None = None,
     output_root: str | Path | None = None,
+    dataset_name: str = "GalaxyPPG",
 ) -> ProcessedDatasetManifest:
     """Save processed windows, labels, and a manifest to disk."""
 
@@ -196,6 +200,7 @@ def save_processed_dataset(
         stride_seconds=stride_seconds,
         label_method=label_method,
         label_aggregation=label_aggregation,
+        dataset_name=dataset_name,
     )
     windows_path = windows_dir / f"{artifact_name}_windows.jsonl.gz"
     labels_path = labels_dir / f"{artifact_name}_labels.csv"
@@ -218,6 +223,7 @@ def save_processed_dataset(
     manifest = ProcessedDatasetManifest(
         artifact_name=artifact_name,
         created_at_utc=datetime.now(timezone.utc).isoformat(),
+        dataset=dataset_name,
         dataset_root=_portable_path_for_manifest(Path(dataset_root), manifest_dir),
         canonical_schema=dict(canonical_schema),
         reference_source=reference_source,
@@ -315,6 +321,12 @@ def _format_float_token(value: float) -> str:
     """Render a float for stable artifact names."""
 
     return f"{value:g}".replace(".", "p")
+
+
+def _format_name_token(value: str) -> str:
+    """Render a dataset name as a stable lowercase artifact token."""
+
+    return "".join(character.lower() if character.isalnum() else "_" for character in value).strip("_")
 
 
 def _portable_path_for_manifest(target_path: str | Path, manifest_dir: Path) -> str:

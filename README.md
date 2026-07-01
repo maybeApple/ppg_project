@@ -527,6 +527,32 @@ experiments/week2_galaxyppg_corrected_2026-05-01/tables/inversion_ablation_table
 experiments/week2_galaxyppg_corrected_2026-05-01/week2_memo.md
 ```
 
+Each completed run folder under `experiments/week2_galaxyppg_corrected_2026-05-01/runs/` also carries fixed reproducibility filenames:
+
+```text
+predictions.csv
+metrics.json
+run_config.json
+run_log.json
+```
+
+The original method-prefixed files are retained beside these fixed filenames. PulsePPG and PaPaGei embedding bundles are stored in their feature folders as:
+
+```text
+<model>_features.npy
+<model>_metadata.csv
+<model>_manifest.json
+run_config.json
+```
+
+The Week 2 embedding manifests must point to:
+
+```text
+data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json
+```
+
+Do not mix these corrected IBI/ECG-derived results with legacy `galaxyppg_hr_w10_s2_median` feature caches.
+
 ## Week 3 Regime Analysis and Oracle Routing
 
 Week 3 uses the corrected GalaxyPPG Week 2 predictions to test whether estimator dominance is regime-dependent before training any deployable router. The analysis pairs a selected classical expert with a selected foundation-model expert on shared valid windows, computes per-window error gaps, adds activity/participant/HR-range/motion/PPG-quality regime features, and reports an oracle router upper bound.
@@ -546,6 +572,10 @@ python -m src.utils.build_week3_artifacts --foundation-model pulseppg --foundati
 Expected Week 3 artifacts:
 
 ```text
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/predictions.csv
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/metrics.json
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/run_config.json
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/run_log.json
 experiments/week3_galaxyppg_regime_oracle_2026-05-13/predictions/week3_window_regime_expert_errors.csv
 experiments/week3_galaxyppg_regime_oracle_2026-05-13/predictions/week3_oracle_router_predictions.csv
 experiments/week3_galaxyppg_regime_oracle_2026-05-13/tables/selected_expert_oracle_summary.csv
@@ -599,17 +629,174 @@ motion_quality:
 Expected Week 4 artifacts:
 
 ```text
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/predictions.csv
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/metrics.json
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/run_config.json
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/run_log.json
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/features/week4_motion_quality_features.csv
 experiments/week4_galaxyppg_lightweight_router_2026-05-13/predictions/week4_routed_predictions.csv
 experiments/week4_galaxyppg_lightweight_router_2026-05-13/tables/routing_summary.csv
 experiments/week4_galaxyppg_lightweight_router_2026-05-13/tables/gate_fold_summary.csv
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/tables/router_fold_assignments.csv
 experiments/week4_galaxyppg_lightweight_router_2026-05-13/tables/gate_feature_coefficients.csv
 experiments/week4_galaxyppg_lightweight_router_2026-05-13/tables/participant_level_routing_metrics.csv
 experiments/week4_galaxyppg_lightweight_router_2026-05-13/tables/activity_level_routing_metrics.csv
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/router_model_manifest.json
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/*.joblib
 experiments/week4_galaxyppg_lightweight_router_2026-05-13/figures/hard_soft_router_mae.png
 experiments/week4_galaxyppg_lightweight_router_2026-05-13/figures/best_router_error_cdf.png
 experiments/week4_galaxyppg_lightweight_router_2026-05-13/figures/combined_gate_feature_coefficients.png
 experiments/week4_galaxyppg_lightweight_router_2026-05-13/week4_lightweight_router.md
 ```
+
+After Week 2-4 outputs exist, normalize the package and verify corrected embedding provenance:
+
+```bash
+python -m src.utils.package_reproducibility_artifacts --week2-root experiments/week2_galaxyppg_corrected_2026-05-01 --week3-root experiments/week3_galaxyppg_regime_oracle_2026-05-13 --week4-root experiments/week4_galaxyppg_lightweight_router_2026-05-13
+```
+
+This writes:
+
+```text
+experiments/reproducibility_manifest.json
+experiments/reproducibility_manifest.md
+experiments/week2_galaxyppg_corrected_2026-05-01/run_manifest.csv
+experiments/week2_galaxyppg_corrected_2026-05-01/embedding_manifest.csv
+```
+
+## Week 5 PPG-DaLiA External Validation
+
+Week 5 starts the external-validation track by mapping PPG-DaLiA into the same canonical schema and label-generation rule used for GalaxyPPG.
+
+Place PPG-DaLiA raw participant pickle files under:
+
+```text
+data/raw/PPG-DaLiA/
+```
+
+Supported layouts are documented in:
+
+```text
+data/raw/PPG-DaLiA/README.md
+```
+
+Export PPG-DaLiA wrist windows and ECG/R-peak-derived labels:
+
+```bash
+python -m src.data.export_ppgdalia --dataset-root data/raw/PPG-DaLiA --output-root data/processed
+```
+
+This produces a processed manifest named like:
+
+```text
+data/processed/ppg_dalia_ecg_w10_s2_beat_interval_instant_hr_median_manifest.json
+```
+
+Run PPG-DaLiA within-dataset baselines from the processed manifest:
+
+```bash
+python -m src.baseline.run_baseline --processed-manifest data/processed/ppg_dalia_ecg_w10_s2_beat_interval_instant_hr_median_manifest.json --method peak --output-dir experiments/week5_ppgdalia_external_validation/runs/baseline_peak
+python -m src.baseline.run_baseline --processed-manifest data/processed/ppg_dalia_ecg_w10_s2_beat_interval_instant_hr_median_manifest.json --method spectral --output-dir experiments/week5_ppgdalia_external_validation/runs/baseline_spectral
+```
+
+Extract PPG-DaLiA PulsePPG and PaPaGei embeddings using the corrected external manifest:
+
+```bash
+python -m src.models.pulseppg_feature --manifest-path data/processed/ppg_dalia_ecg_w10_s2_beat_interval_instant_hr_median_manifest.json --experiment-config configs/experiment_modes.json --experiment-mode harmonized --output-dir experiments/week5_ppgdalia_external_validation/runs/pulseppg_features --batch-size 256 --device cpu
+python -m src.models.papagei_feature --manifest-path data/processed/ppg_dalia_ecg_w10_s2_beat_interval_instant_hr_median_manifest.json --experiment-config configs/experiment_modes.json --experiment-mode harmonized --output-dir experiments/week5_ppgdalia_external_validation/runs/papagei_features --batch-size 128 --device cpu
+```
+
+Train within-dataset probes:
+
+```bash
+python -m src.regression.train_regressor --feature-manifest experiments/week5_ppgdalia_external_validation/runs/pulseppg_features/pulseppg_manifest.json --regressor ridge --random-state 42 --output-dir experiments/week5_ppgdalia_external_validation/runs/pulseppg_ridge
+python -m src.regression.train_regressor --feature-manifest experiments/week5_ppgdalia_external_validation/runs/papagei_features/papagei_manifest.json --regressor ridge --random-state 42 --output-dir experiments/week5_ppgdalia_external_validation/runs/papagei_ridge
+```
+
+The Week 5 external-validation folder should follow the same run-folder rule:
+
+```text
+predictions.csv
+metrics.json
+run_config.json
+run_log.json
+```
+
+## Week 6 WildPPG Wrist External Validation
+
+Week 6 uses a configurable WildPPG wrist manifest because public WildPPG distributions can be organized differently across mirrors or subsets. Put raw files under:
+
+```text
+data/raw/WildPPG-wrist/
+```
+
+Create:
+
+```text
+data/raw/WildPPG-wrist/wildppg_wrist_manifest.csv
+```
+
+The required and optional columns are documented in:
+
+```text
+data/raw/WildPPG-wrist/README.md
+```
+
+Export WildPPG wrist windows and ECG/RR-derived labels:
+
+```bash
+python -m src.data.export_wildppg_wrist --dataset-root data/raw/WildPPG-wrist --output-root data/processed
+```
+
+This produces a processed manifest named like:
+
+```text
+data/processed/wildppg_wrist_ecg_w10_s2_beat_interval_instant_hr_median_manifest.json
+```
+
+Run within-dataset baselines:
+
+```bash
+python -m src.baseline.run_baseline --processed-manifest data/processed/wildppg_wrist_ecg_w10_s2_beat_interval_instant_hr_median_manifest.json --method peak --output-dir experiments/week6_wildppg_wrist_external_validation/runs/baseline_peak
+python -m src.baseline.run_baseline --processed-manifest data/processed/wildppg_wrist_ecg_w10_s2_beat_interval_instant_hr_median_manifest.json --method spectral --output-dir experiments/week6_wildppg_wrist_external_validation/runs/baseline_spectral
+```
+
+Extract embeddings and train probes with the same commands used for Week 5, replacing the manifest path and output root with the WildPPG paths.
+
+## Week 7 Final Statistics
+
+Build participant-level paired statistics for the Week 4 routed system versus each participant's best single expert:
+
+```bash
+python -m src.utils.build_week7_statistics --week4-root experiments/week4_galaxyppg_lightweight_router_2026-05-13 --output-root experiments/week7_final_statistics --router-feature-set motion_quality --router-type hard_gate
+```
+
+Expected outputs:
+
+```text
+experiments/week7_final_statistics/participant_level_router_comparison.csv
+experiments/week7_final_statistics/paired_significance_tests.csv
+experiments/week7_final_statistics/paired_significance_tests.json
+experiments/week7_final_statistics/week7_statistics.md
+```
+
+Statistics are computed at participant level. Positive deltas mean the router improved over the participant's best single expert.
+
+## Week 8 Final Frozen Package
+
+Freeze the final artifact set for paper drafting and reproducibility review:
+
+```bash
+python -m src.utils.freeze_final_results --week2-root experiments/week2_galaxyppg_corrected_2026-05-01 --week3-root experiments/week3_galaxyppg_regime_oracle_2026-05-13 --week4-root experiments/week4_galaxyppg_lightweight_router_2026-05-13 --week7-root experiments/week7_final_statistics
+```
+
+Expected output:
+
+```text
+experiments/final_frozen_results_<date>/
+```
+
+The frozen package contains copied Week 2 tables/metrics/predictions, Week 3 oracle-routing artifacts, Week 4 router features/predictions/metrics/models, Week 7 statistics, a `final_frozen_manifest.json`, and a package README with reproduction commands.
 
 ## Full Reproduction Order
 
@@ -640,9 +827,43 @@ python -m src.data.export_processed --dataset-root data/raw/GalaxyPPG --split-co
 notebooks/galaxyppg_ppg_inversion_check.ipynb
 ```
 
-6. Run a baseline or extract model features with a selected experiment mode.
+6. Rebuild the Week 2 corrected benchmark package from completed runs.
 
-7. Train downstream regressors using the saved feature manifest.
+```bash
+python -m src.utils.build_week2_artifacts --search-root experiments/week2_galaxyppg_corrected_2026-05-01/runs --output-root experiments/week2_galaxyppg_corrected_2026-05-01 --tag-name week2-galaxyppg-corrected-2026-05-01
+```
+
+7. Rebuild the Week 3 oracle-routing artifacts from Week 2 predictions.
+
+```bash
+python -m src.utils.build_week3_artifacts --week2-root experiments/week2_galaxyppg_corrected_2026-05-01 --output-root experiments/week3_galaxyppg_regime_oracle_2026-05-13
+```
+
+8. Rebuild the Week 4 router artifacts, including feature CSVs, fold assignments, and trained fold models.
+
+```bash
+python -m src.utils.build_week4_artifacts --week3-root experiments/week3_galaxyppg_regime_oracle_2026-05-13 --output-root experiments/week4_galaxyppg_lightweight_router_2026-05-13
+```
+
+9. Backfill fixed filenames and write the package-level reproducibility manifest.
+
+```bash
+python -m src.utils.package_reproducibility_artifacts --week2-root experiments/week2_galaxyppg_corrected_2026-05-01 --week3-root experiments/week3_galaxyppg_regime_oracle_2026-05-13 --week4-root experiments/week4_galaxyppg_lightweight_router_2026-05-13
+```
+
+10. For external validation, export PPG-DaLiA and WildPPG wrist processed manifests after placing the raw data.
+
+```bash
+python -m src.data.export_ppgdalia --dataset-root data/raw/PPG-DaLiA --output-root data/processed
+python -m src.data.export_wildppg_wrist --dataset-root data/raw/WildPPG-wrist --output-root data/processed
+```
+
+11. Build participant-level Week 7 statistics and freeze the final package.
+
+```bash
+python -m src.utils.build_week7_statistics --week4-root experiments/week4_galaxyppg_lightweight_router_2026-05-13 --output-root experiments/week7_final_statistics --router-feature-set motion_quality --router-type hard_gate
+python -m src.utils.freeze_final_results --week2-root experiments/week2_galaxyppg_corrected_2026-05-01 --week3-root experiments/week3_galaxyppg_regime_oracle_2026-05-13 --week4-root experiments/week4_galaxyppg_lightweight_router_2026-05-13 --week7-root experiments/week7_final_statistics
+```
 
 ## Verification Performed
 

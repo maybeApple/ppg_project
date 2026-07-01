@@ -62,11 +62,16 @@ def main() -> None:
     """Build windows, run one baseline, evaluate, and save the outputs."""
 
     args = parse_args()
-    split_config_path = resolve_split_config_path(args.split_config)
-    fixed_split = load_fixed_split_config(split_config_path) if split_config_path is not None else None
+    split_config_path = None
+    fixed_split = None
 
     if args.processed_manifest is not None:
         processed_manifest = load_processed_manifest(args.processed_manifest)
+        if args.split_config is not None:
+            split_config_path = resolve_split_config_path(args.split_config)
+        elif processed_manifest.get("split_config_path"):
+            split_config_path = Path(str(processed_manifest["split_config_path"]))
+        fixed_split = load_fixed_split_config(split_config_path) if split_config_path is not None else None
         windows = load_processed_windows(processed_manifest["windows_path"])
         if windows.empty:
             raise RuntimeError("The processed manifest exists, but its window table is empty.")
@@ -94,6 +99,8 @@ def main() -> None:
             "ppg_source": args.ppg_source,
         }
     else:
+        split_config_path = resolve_split_config_path(args.split_config)
+        fixed_split = load_fixed_split_config(split_config_path) if split_config_path is not None else None
         processed_manifest = {}
         participant_ids = configured_participant_ids(fixed_split) if fixed_split is not None else None
         windows = build_window_dataset(
@@ -171,10 +178,18 @@ def main() -> None:
         "random_state": args.random_state,
         "train_participants": train_participants,
         "test_participants": test_participants,
-        "split_config_path": None if fixed_split is None else str(fixed_split.split_config_path),
-        "split_name": None if fixed_split is None else fixed_split.split_name,
-        "validation_strategy": None if fixed_split is None else fixed_split.validation_strategy,
-        "validation_folds": None if fixed_split is None else [fold.to_dict() for fold in fixed_split.validation_folds],
+        "split_config_path": (
+            processed_manifest.get("split_config_path") if fixed_split is None else str(fixed_split.split_config_path)
+        ),
+        "split_name": processed_manifest.get("split_name") if fixed_split is None else fixed_split.split_name,
+        "validation_strategy": (
+            processed_manifest.get("validation_strategy") if fixed_split is None else fixed_split.validation_strategy
+        ),
+        "validation_folds": (
+            processed_manifest.get("validation_folds")
+            if fixed_split is None
+            else [fold.to_dict() for fold in fixed_split.validation_folds]
+        ),
         **summary.to_dict(),
     }
 
@@ -182,23 +197,41 @@ def main() -> None:
     predictions_path = args.output_dir / f"{args.method}_predictions.csv"
     metrics_path = args.output_dir / f"{args.method}_metrics.json"
     run_log_path = args.output_dir / f"{args.method}_run_log.json"
+    generic_predictions_path = args.output_dir / "predictions.csv"
+    generic_metrics_path = args.output_dir / "metrics.json"
+    generic_run_log_path = args.output_dir / "run_log.json"
+    run_config_path = args.output_dir / "run_config.json"
     predictions.to_csv(predictions_path, index=False)
+    predictions.to_csv(generic_predictions_path, index=False)
     metrics_path.write_text(json.dumps(metadata, indent=2, ensure_ascii=False), encoding="utf-8")
-    run_log_path.write_text(
-        json.dumps(
-            {
-                "module": "src.baseline.run_baseline",
-                "argv": sys.argv,
-                "input_source": input_source,
-                "predictions_path": str(predictions_path),
-                "metrics_path": str(metrics_path),
-                "metrics": metadata,
-            },
-            indent=2,
-            ensure_ascii=False,
-        ),
-        encoding="utf-8",
-    )
+    generic_metrics_path.write_text(json.dumps(metadata, indent=2, ensure_ascii=False), encoding="utf-8")
+    run_config = {
+        "schema_version": "run_config_v1",
+        "run_type": "baseline",
+        "module": "src.baseline.run_baseline",
+        "argv": sys.argv,
+        "input_source": input_source,
+        "method": args.method,
+        "artifacts": {
+            "predictions_csv": str(generic_predictions_path),
+            "metrics_json": str(generic_metrics_path),
+            "run_log_json": str(generic_run_log_path),
+        },
+    }
+    run_config_path.write_text(json.dumps(run_config, indent=2, ensure_ascii=False), encoding="utf-8")
+    run_log = {
+        "module": "src.baseline.run_baseline",
+        "argv": sys.argv,
+        "input_source": input_source,
+        "predictions_path": str(predictions_path),
+        "metrics_path": str(metrics_path),
+        "generic_predictions_path": str(generic_predictions_path),
+        "generic_metrics_path": str(generic_metrics_path),
+        "run_config_path": str(run_config_path),
+        "metrics": metadata,
+    }
+    run_log_path.write_text(json.dumps(run_log, indent=2, ensure_ascii=False), encoding="utf-8")
+    generic_run_log_path.write_text(json.dumps(run_log, indent=2, ensure_ascii=False), encoding="utf-8")
 
     print(f"predictions={predictions_path}")
     print(f"metrics={metrics_path}")
