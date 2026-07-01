@@ -64,8 +64,7 @@ def main() -> None:
         ("week7_statistics", args.week7_root, output_root / "week7_statistics"),
     ]
     for label, source, target in copy_groups:
-        copied = copy_tree_if_exists(source, target)
-        manifest["artifacts"].append({"label": label, "source": source.as_posix(), "target": target.as_posix(), "copied": copied})
+        manifest["artifacts"].append(copy_tree_if_exists(label, source, target))
 
     (output_root / "final_frozen_manifest.json").write_text(
         json.dumps(manifest, indent=2, ensure_ascii=False),
@@ -75,15 +74,27 @@ def main() -> None:
     print(f"frozen_results={output_root}")
 
 
-def copy_tree_if_exists(source: Path, target: Path) -> bool:
-    """Copy a directory tree when present."""
+def copy_tree_if_exists(label: str, source: Path, target: Path) -> dict[str, Any]:
+    """Copy a directory tree when present and record missing groups explicitly."""
 
     if not source.exists():
-        return False
+        return {
+            "label": label,
+            "source": source.as_posix(),
+            "target": target.as_posix(),
+            "copied": False,
+            "reason": "source_missing",
+        }
     if target.exists():
         shutil.rmtree(target)
     shutil.copytree(source, target)
-    return True
+    return {
+        "label": label,
+        "source": source.as_posix(),
+        "target": target.as_posix(),
+        "copied": True,
+        "reason": None,
+    }
 
 
 def reproduction_commands(args: argparse.Namespace) -> list[str]:

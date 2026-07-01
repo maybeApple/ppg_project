@@ -668,6 +668,12 @@ experiments/week2_galaxyppg_corrected_2026-05-01/embedding_manifest.csv
 
 Week 5 starts the external-validation track by mapping PPG-DaLiA into the same canonical schema and label-generation rule used for GalaxyPPG.
 
+If the real raw dataset is unavailable, run the synthetic smoke test instead of creating fake result tables:
+
+```bash
+python scripts/smoke_ppgdalia_export.py
+```
+
 Place PPG-DaLiA raw participant pickle files under:
 
 ```text
@@ -709,9 +715,19 @@ python -m src.models.papagei_feature --manifest-path data/processed/ppg_dalia_ec
 Train within-dataset probes:
 
 ```bash
+python -m src.regression.train_regressor --feature-manifest experiments/week5_ppgdalia_external_validation/runs/pulseppg_features/pulseppg_manifest.json --regressor linear --random-state 42 --output-dir experiments/week5_ppgdalia_external_validation/runs/pulseppg_linear
 python -m src.regression.train_regressor --feature-manifest experiments/week5_ppgdalia_external_validation/runs/pulseppg_features/pulseppg_manifest.json --regressor ridge --random-state 42 --output-dir experiments/week5_ppgdalia_external_validation/runs/pulseppg_ridge
+python -m src.regression.train_regressor --feature-manifest experiments/week5_ppgdalia_external_validation/runs/papagei_features/papagei_manifest.json --regressor linear --random-state 42 --output-dir experiments/week5_ppgdalia_external_validation/runs/papagei_linear
 python -m src.regression.train_regressor --feature-manifest experiments/week5_ppgdalia_external_validation/runs/papagei_features/papagei_manifest.json --regressor ridge --random-state 42 --output-dir experiments/week5_ppgdalia_external_validation/runs/papagei_ridge
 ```
+
+Build the Week 5 external-validation result/status table after real metrics exist:
+
+```bash
+python -m src.utils.build_external_validation_status --experiments-root experiments --output-csv reports/external_validation_result_table.csv --output-md reports/external_validation_result_table.md
+```
+
+Rows without real metrics are marked `requires_real_data`.
 
 The Week 5 external-validation folder should follow the same run-folder rule:
 
@@ -725,6 +741,12 @@ run_log.json
 ## Week 6 WildPPG Wrist External Validation
 
 Week 6 uses a configurable WildPPG wrist manifest because public WildPPG distributions can be organized differently across mirrors or subsets. Put raw files under:
+
+If the real raw dataset is unavailable, run the synthetic smoke test instead of creating fake result tables:
+
+```bash
+python scripts/smoke_wildppg_wrist_export.py
+```
 
 ```text
 data/raw/WildPPG-wrist/
@@ -763,6 +785,12 @@ python -m src.baseline.run_baseline --processed-manifest data/processed/wildppg_
 
 Extract embeddings and train probes with the same commands used for Week 5, replacing the manifest path and output root with the WildPPG paths.
 
+Build the combined Week 5/6 external-validation result/status table with:
+
+```bash
+python -m src.utils.build_external_validation_status --experiments-root experiments --output-csv reports/external_validation_result_table.csv --output-md reports/external_validation_result_table.md
+```
+
 ## Week 7 Final Statistics
 
 Build participant-level paired statistics for the Week 4 routed system versus each participant's best single expert:
@@ -797,6 +825,8 @@ experiments/final_frozen_results_<date>/
 ```
 
 The frozen package contains copied Week 2 tables/metrics/predictions, Week 3 oracle-routing artifacts, Week 4 router features/predictions/metrics/models, Week 7 statistics, a `final_frozen_manifest.json`, and a package README with reproduction commands.
+
+Generated result packages, prediction CSVs, embedding arrays, trained `.joblib` models, figures, and final frozen result directories are intentionally gitignored. Regenerate them locally or distribute them through release/artifact storage rather than committing them directly.
 
 ## Full Reproduction Order
 
