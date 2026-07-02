@@ -61,6 +61,8 @@ def main() -> None:
         ("week4_tables", args.week4_root / "tables", output_root / "week4" / "tables"),
         ("week4_metrics", args.week4_root / "metrics", output_root / "week4" / "metrics"),
         ("week4_features", args.week4_root / "features", output_root / "week4" / "features"),
+        ("week4_predictions", args.week4_root / "predictions", output_root / "week4" / "predictions"),
+        ("week4_models", args.week4_root / "models", output_root / "week4" / "models"),
         ("week4_figures", args.week4_root / "figures", output_root / "week4" / "figures"),
     ]
     for label, source, target in copy_groups:
@@ -223,9 +225,9 @@ def write_readme(path: Path, manifest: dict[str, Any]) -> None:
         [
             "## Large Artifacts",
             "",
-            "Large prediction CSVs, embedding `.npy` arrays, trained downstream estimators, and per-fold router `.joblib` files are intentionally not committed in this acceptance package.",
+            "Week 4 routed prediction CSVs and trained router `.joblib` files are committed because they are required for acceptance.",
             "",
-            "They remain available in the local source result directories listed above. If external transfer is required, publish those large files as a release artifact or archive instead of committing them to git.",
+            "Large embedding `.npy` arrays, raw data, external checkpoints, and unrelated experiment run folders are intentionally not committed.",
             "",
         ]
     )

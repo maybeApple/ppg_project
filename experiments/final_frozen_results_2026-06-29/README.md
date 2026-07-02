@@ -29,9 +29,9 @@ python -m src.utils.freeze_final_results --week2-root experiments/week2_galaxypp
 
 ## Large Artifacts
 
-Large prediction CSVs, embedding `.npy` arrays, trained downstream estimators, and per-fold router `.joblib` files are intentionally not committed in this acceptance package.
+Week 4 routed prediction CSVs and trained router `.joblib` files are committed because they are required for acceptance.
 
-They remain available in the local source result directories listed above. If external transfer is required, publish those large files as a release artifact or archive instead of committing them to git.
+Large embedding `.npy` arrays, raw data, external checkpoints, and unrelated experiment run folders are intentionally not committed.
 
 ## Artifact Groups
 
@@ -45,6 +45,8 @@ They remain available in the local source result directories listed above. If ex
 - week4_tables: `experiments/final_frozen_results_2026-06-29/week4/tables` copied=True
 - week4_metrics: `experiments/final_frozen_results_2026-06-29/week4/metrics` copied=True
 - week4_features: `experiments/final_frozen_results_2026-06-29/week4/features` copied=True
+- week4_predictions: `experiments/final_frozen_results_2026-06-29/week4/predictions` copied=True
+- week4_models: `experiments/final_frozen_results_2026-06-29/week4/models` copied=True
 - week4_figures: `experiments/final_frozen_results_2026-06-29/week4/figures` copied=True
 
 ## Artifact Files

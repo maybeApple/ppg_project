@@ -79,6 +79,20 @@
       "reason": null
     },
     {
+      "label": "week4_predictions",
+      "source": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/predictions",
+      "target": "experiments/final_frozen_results_2026-06-29/week4/predictions",
+      "copied": true,
+      "reason": null
+    },
+    {
+      "label": "week4_models",
+      "source": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/models",
+      "target": "experiments/final_frozen_results_2026-06-29/week4/models",
+      "copied": true,
+      "reason": null
+    },
+    {
       "label": "week4_figures",
       "source": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/figures",
       "target": "experiments/final_frozen_results_2026-06-29/week4/figures",
