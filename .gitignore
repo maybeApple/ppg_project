@@ -71,3 +71,9 @@ experiments/week7_final_statistics/
 experiments/final_frozen_results_*/
 !experiments/final_frozen_results_2026-06-29/
 !experiments/final_frozen_results_2026-06-29/**
+experiments/final_frozen_results_2026-06-29/**/runs/
+experiments/final_frozen_results_2026-06-29/**/predictions/
+experiments/final_frozen_results_2026-06-29/**/predictions.csv
+experiments/final_frozen_results_2026-06-29/**/*_predictions.csv
+experiments/final_frozen_results_2026-06-29/**/*.npy
+experiments/final_frozen_results_2026-06-29/**/*.joblib

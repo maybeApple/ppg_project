@@ -52,22 +52,16 @@ def main() -> None:
     }
     copy_groups = [
         ("configs", Path("configs"), output_root / "configs"),
-        ("week2_runs", args.week2_root / "runs", output_root / "week2" / "runs"),
         ("week2_tables", args.week2_root / "tables", output_root / "week2" / "tables"),
         ("week2_metrics", args.week2_root / "metrics", output_root / "week2" / "metrics"),
-        ("week2_predictions", args.week2_root / "predictions", output_root / "week2" / "predictions"),
         ("week2_figures", args.week2_root / "figures", output_root / "week2" / "figures"),
         ("week3_tables", args.week3_root / "tables", output_root / "week3" / "tables"),
-        ("week3_predictions", args.week3_root / "predictions", output_root / "week3" / "predictions"),
         ("week3_metrics", args.week3_root / "metrics", output_root / "week3" / "metrics"),
         ("week3_figures", args.week3_root / "figures", output_root / "week3" / "figures"),
         ("week4_tables", args.week4_root / "tables", output_root / "week4" / "tables"),
-        ("week4_predictions", args.week4_root / "predictions", output_root / "week4" / "predictions"),
         ("week4_metrics", args.week4_root / "metrics", output_root / "week4" / "metrics"),
         ("week4_features", args.week4_root / "features", output_root / "week4" / "features"),
-        ("week4_models", args.week4_root / "models", output_root / "week4" / "models"),
         ("week4_figures", args.week4_root / "figures", output_root / "week4" / "figures"),
-        ("week7_statistics", args.week7_root, output_root / "week7_statistics"),
     ]
     for label, source, target in copy_groups:
         manifest["artifacts"].append(copy_tree_if_exists(label, source, target))
@@ -80,15 +74,14 @@ def main() -> None:
         ("week2_embedding_manifest", args.week2_root / "embedding_manifest.csv", output_root / "week2" / "embedding_manifest.csv"),
         ("week2_memo", args.week2_root / "week2_memo.md", output_root / "week2" / "week2_memo.md"),
         ("week3_memo", args.week3_root / "week3_regime_analysis.md", output_root / "week3" / "week3_regime_analysis.md"),
-        ("week3_predictions_csv", args.week3_root / "predictions.csv", output_root / "week3" / "predictions.csv"),
         ("week3_metrics_json", args.week3_root / "metrics.json", output_root / "week3" / "metrics.json"),
         ("week3_run_config", args.week3_root / "run_config.json", output_root / "week3" / "run_config.json"),
         ("week3_run_log", args.week3_root / "run_log.json", output_root / "week3" / "run_log.json"),
         ("week4_memo", args.week4_root / "week4_lightweight_router.md", output_root / "week4" / "week4_lightweight_router.md"),
-        ("week4_predictions_csv", args.week4_root / "predictions.csv", output_root / "week4" / "predictions.csv"),
         ("week4_metrics_json", args.week4_root / "metrics.json", output_root / "week4" / "metrics.json"),
         ("week4_run_config", args.week4_root / "run_config.json", output_root / "week4" / "run_config.json"),
         ("week4_run_log", args.week4_root / "run_log.json", output_root / "week4" / "run_log.json"),
+        ("week4_router_model_manifest", args.week4_root / "models" / "router_model_manifest.json", output_root / "week4" / "models" / "router_model_manifest.json"),
     ]
     for label, source, target in copy_files:
         manifest["artifact_files"].append(copy_file_if_exists(label, source, target))
@@ -206,7 +199,6 @@ def reproduction_commands(args: argparse.Namespace) -> list[str]:
         "python -m src.utils.build_week2_artifacts --search-root experiments/week2_galaxyppg_corrected_2026-05-01/runs --output-root experiments/week2_galaxyppg_corrected_2026-05-01 --tag-name week2-galaxyppg-corrected-2026-05-01",
         "python -m src.utils.build_week3_artifacts --week2-root experiments/week2_galaxyppg_corrected_2026-05-01 --output-root experiments/week3_galaxyppg_regime_oracle_2026-05-13",
         "python -m src.utils.build_week4_artifacts --week3-root experiments/week3_galaxyppg_regime_oracle_2026-05-13 --output-root experiments/week4_galaxyppg_lightweight_router_2026-05-13",
-        "python -m src.utils.build_week7_statistics --week4-root experiments/week4_galaxyppg_lightweight_router_2026-05-13 --output-root experiments/week7_final_statistics",
         f"python -m src.utils.freeze_final_results --week2-root {args.week2_root.as_posix()} --week3-root {args.week3_root.as_posix()} --week4-root {args.week4_root.as_posix()} --week7-root {args.week7_root.as_posix()}",
     ]
 
@@ -227,6 +219,16 @@ def write_readme(path: Path, manifest: dict[str, Any]) -> None:
     lines.extend(["", "## Reproduction Commands", ""])
     for command in manifest["commands"]:
         lines.extend(["```bash", command, "```", ""])
+    lines.extend(
+        [
+            "## Large Artifacts",
+            "",
+            "Large prediction CSVs, embedding `.npy` arrays, trained downstream estimators, and per-fold router `.joblib` files are intentionally not committed in this acceptance package.",
+            "",
+            "They remain available in the local source result directories listed above. If external transfer is required, publish those large files as a release artifact or archive instead of committing them to git.",
+            "",
+        ]
+    )
     lines.extend(["## Artifact Groups", ""])
     for artifact in manifest["artifacts"]:
         lines.append(f"- {artifact['label']}: `{artifact['target']}` copied={artifact['copied']}")

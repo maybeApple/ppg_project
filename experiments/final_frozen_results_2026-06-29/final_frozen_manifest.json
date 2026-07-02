@@ -16,13 +16,6 @@
       "reason": null
     },
     {
-      "label": "week2_runs",
-      "source": "experiments/week2_galaxyppg_corrected_2026-05-01/runs",
-      "target": "experiments/final_frozen_results_2026-06-29/week2/runs",
-      "copied": true,
-      "reason": null
-    },
-    {
       "label": "week2_tables",
       "source": "experiments/week2_galaxyppg_corrected_2026-05-01/tables",
       "target": "experiments/final_frozen_results_2026-06-29/week2/tables",
@@ -37,13 +30,6 @@
       "reason": null
     },
     {
-      "label": "week2_predictions",
-      "source": "experiments/week2_galaxyppg_corrected_2026-05-01/predictions",
-      "target": "experiments/final_frozen_results_2026-06-29/week2/predictions",
-      "copied": true,
-      "reason": null
-    },
-    {
       "label": "week2_figures",
       "source": "experiments/week2_galaxyppg_corrected_2026-05-01/figures",
       "target": "experiments/final_frozen_results_2026-06-29/week2/figures",
@@ -54,13 +40,6 @@
       "label": "week3_tables",
       "source": "experiments/week3_galaxyppg_regime_oracle_2026-05-13/tables",
       "target": "experiments/final_frozen_results_2026-06-29/week3/tables",
-      "copied": true,
-      "reason": null
-    },
-    {
-      "label": "week3_predictions",
-      "source": "experiments/week3_galaxyppg_regime_oracle_2026-05-13/predictions",
-      "target": "experiments/final_frozen_results_2026-06-29/week3/predictions",
       "copied": true,
       "reason": null
     },
@@ -86,13 +65,6 @@
       "reason": null
     },
     {
-      "label": "week4_predictions",
-      "source": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/predictions",
-      "target": "experiments/final_frozen_results_2026-06-29/week4/predictions",
-      "copied": true,
-      "reason": null
-    },
-    {
       "label": "week4_metrics",
       "source": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/metrics",
       "target": "experiments/final_frozen_results_2026-06-29/week4/metrics",
@@ -107,23 +79,9 @@
       "reason": null
     },
     {
-      "label": "week4_models",
-      "source": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/models",
-      "target": "experiments/final_frozen_results_2026-06-29/week4/models",
-      "copied": true,
-      "reason": null
-    },
-    {
       "label": "week4_figures",
       "source": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/figures",
       "target": "experiments/final_frozen_results_2026-06-29/week4/figures",
-      "copied": true,
-      "reason": null
-    },
-    {
-      "label": "week7_statistics",
-      "source": "experiments/week7_final_statistics",
-      "target": "experiments/final_frozen_results_2026-06-29/week7_statistics",
       "copied": true,
       "reason": null
     }
@@ -179,13 +137,6 @@
       "reason": null
     },
     {
-      "label": "week3_predictions_csv",
-      "source": "experiments/week3_galaxyppg_regime_oracle_2026-05-13/predictions.csv",
-      "target": "experiments/final_frozen_results_2026-06-29/week3/predictions.csv",
-      "copied": true,
-      "reason": null
-    },
-    {
       "label": "week3_metrics_json",
       "source": "experiments/week3_galaxyppg_regime_oracle_2026-05-13/metrics.json",
       "target": "experiments/final_frozen_results_2026-06-29/week3/metrics.json",
@@ -214,13 +165,6 @@
       "reason": null
     },
     {
-      "label": "week4_predictions_csv",
-      "source": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/predictions.csv",
-      "target": "experiments/final_frozen_results_2026-06-29/week4/predictions.csv",
-      "copied": true,
-      "reason": null
-    },
-    {
       "label": "week4_metrics_json",
       "source": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/metrics.json",
       "target": "experiments/final_frozen_results_2026-06-29/week4/metrics.json",
@@ -238,6 +182,13 @@
       "label": "week4_run_log",
       "source": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/run_log.json",
       "target": "experiments/final_frozen_results_2026-06-29/week4/run_log.json",
+      "copied": true,
+      "reason": null
+    },
+    {
+      "label": "week4_router_model_manifest",
+      "source": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/router_model_manifest.json",
+      "target": "experiments/final_frozen_results_2026-06-29/week4/models/router_model_manifest.json",
       "copied": true,
       "reason": null
     },
@@ -260,7 +211,6 @@
     "python -m src.utils.build_week2_artifacts --search-root experiments/week2_galaxyppg_corrected_2026-05-01/runs --output-root experiments/week2_galaxyppg_corrected_2026-05-01 --tag-name week2-galaxyppg-corrected-2026-05-01",
     "python -m src.utils.build_week3_artifacts --week2-root experiments/week2_galaxyppg_corrected_2026-05-01 --output-root experiments/week3_galaxyppg_regime_oracle_2026-05-13",
     "python -m src.utils.build_week4_artifacts --week3-root experiments/week3_galaxyppg_regime_oracle_2026-05-13 --output-root experiments/week4_galaxyppg_lightweight_router_2026-05-13",
-    "python -m src.utils.build_week7_statistics --week4-root experiments/week4_galaxyppg_lightweight_router_2026-05-13 --output-root experiments/week7_final_statistics",
     "python -m src.utils.freeze_final_results --week2-root experiments/week2_galaxyppg_corrected_2026-05-01 --week3-root experiments/week3_galaxyppg_regime_oracle_2026-05-13 --week4-root experiments/week4_galaxyppg_lightweight_router_2026-05-13 --week7-root experiments/week7_final_statistics"
   ]
 }
