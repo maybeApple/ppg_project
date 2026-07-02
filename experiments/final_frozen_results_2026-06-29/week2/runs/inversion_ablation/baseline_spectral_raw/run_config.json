@@ -1,0 +1,31 @@
+{
+  "schema_version": "run_config_v1",
+  "run_type": "week2_experiment_run",
+  "module": "src.baseline.run_baseline",
+  "argv": [
+    "E:\\PycharmProjects\\ppg_project\\src\\baseline\\run_baseline.py",
+    "--processed-manifest",
+    "data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json",
+    "--split-config",
+    "configs/galaxyppg_submission_split.json",
+    "--method",
+    "spectral",
+    "--ppg-source",
+    "raw",
+    "--output-dir",
+    "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/baseline_spectral_raw"
+  ],
+  "inputs": {
+    "processed_manifest_path": "E:\\PycharmProjects\\ppg_project\\data\\processed\\galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json",
+    "split_config_path": "E:\\PycharmProjects\\ppg_project\\configs\\galaxyppg_submission_split.json",
+    "feature_manifest_path": null,
+    "ppg_source": "raw"
+  },
+  "artifacts": {
+    "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/baseline_spectral_raw/predictions.csv",
+    "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/baseline_spectral_raw/metrics.json",
+    "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/baseline_spectral_raw/run_log.json",
+    "source_predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/baseline_spectral_raw/spectral_predictions.csv",
+    "source_metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/baseline_spectral_raw/spectral_metrics.json"
+  }
+}

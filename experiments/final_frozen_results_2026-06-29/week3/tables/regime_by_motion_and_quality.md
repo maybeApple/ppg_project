@@ -1,0 +1,11 @@
+| motion_intensity_bin | ppg_autocorr_quality_bin | n_windows | classical_MAE | foundation_MAE | oracle_MAE | mean_error_gap_classical_minus_foundation | median_error_gap_classical_minus_foundation | classical_win_rate | foundation_win_rate | tie_rate | oracle_gain_vs_best_single_MAE |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| high_motion | low_quality | 1007 | 20.0766 | 15.4680 | 10.5645 | 4.6086 | 0.0755 | 0.4995 | 0.5005 | 0.0000 | 4.9035 |
+| high_motion | mid_quality | 770 | 16.5361 | 13.1860 | 9.1216 | 3.3501 | -0.0807 | 0.5039 | 0.4961 | 0.0000 | 4.0643 |
+| high_motion | high_quality | 766 | 12.9113 | 9.6113 | 6.5032 | 3.3000 | 0.5455 | 0.4634 | 0.5366 | 0.0000 | 3.1081 |
+| low_motion | high_quality | 897 | 3.1062 | 2.9501 | 2.0562 | 0.1560 | 0.1984 | 0.4560 | 0.5440 | 0.0000 | 0.8940 |
+| mid_motion | high_quality | 880 | 4.3122 | 4.6381 | 2.8805 | -0.3259 | -0.2270 | 0.5307 | 0.4693 | 0.0000 | 1.4317 |
+| low_motion | low_quality | 685 | 2.8212 | 3.2036 | 2.1073 | -0.3824 | -0.2436 | 0.5518 | 0.4482 | 0.0000 | 0.7139 |
+| mid_motion | mid_quality | 812 | 3.6523 | 4.1116 | 2.4011 | -0.4593 | -0.3138 | 0.5530 | 0.4470 | 0.0000 | 1.2511 |
+| mid_motion | low_quality | 851 | 4.0900 | 4.5650 | 2.6701 | -0.4750 | -0.4464 | 0.5699 | 0.4301 | 0.0000 | 1.4199 |
+| low_motion | mid_quality | 961 | 2.2977 | 2.8916 | 1.6843 | -0.5938 | -0.4514 | 0.5911 | 0.4089 | 0.0000 | 0.6134 |

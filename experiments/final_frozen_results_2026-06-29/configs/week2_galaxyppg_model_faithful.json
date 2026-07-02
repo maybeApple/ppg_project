@@ -1,0 +1,47 @@
+{
+  "schema_version": "week2_benchmark_config_v1",
+  "dataset": "GalaxyPPG",
+  "evaluation": "subject_independent",
+  "split": "fixed_participant_holdout_with_grouped_validation",
+  "split_config": "configs/galaxyppg_submission_split.json",
+  "processed_manifest": "data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json",
+  "window": {
+    "length_seconds": 10,
+    "stride_seconds": 2
+  },
+  "label": {
+    "source": "IBI_or_ECG",
+    "method": "median_instantaneous_hr_from_beat_intervals"
+  },
+  "galaxyppg": {
+    "ppg_inversion": true
+  },
+  "preprocessing_mode": "model_faithful",
+  "pulseppg": {
+    "embedding": "frozen",
+    "probe": [
+      "linear",
+      "ridge"
+    ],
+    "normalization_variants": [
+      "none",
+      "per_window_zscore",
+      "person_specific_zscore",
+      "causal_running_zscore"
+    ]
+  },
+  "papagei": {
+    "embedding": "frozen",
+    "probe": [
+      "linear",
+      "ridge"
+    ]
+  },
+  "stronger_regressor": {
+    "allowed": [
+      "random_forest",
+      "gradient_boosting"
+    ],
+    "purpose": "practical_upper_bound_only"
+  }
+}

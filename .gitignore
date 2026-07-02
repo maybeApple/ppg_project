@@ -69,3 +69,5 @@ experiments/week3_galaxyppg_regime_oracle_*/
 experiments/week4_galaxyppg_lightweight_router_*/
 experiments/week7_final_statistics/
 experiments/final_frozen_results_*/
+!experiments/final_frozen_results_2026-06-29/
+!experiments/final_frozen_results_2026-06-29/**

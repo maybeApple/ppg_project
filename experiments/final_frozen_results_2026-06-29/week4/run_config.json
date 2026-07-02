@@ -1,0 +1,55 @@
+{
+  "schema_version": "run_config_v1",
+  "run_type": "week4_lightweight_router",
+  "module": "src.utils.build_week4_artifacts",
+  "argv": [
+    "E:\\PycharmProjects\\ppg_project\\src\\utils\\build_week4_artifacts.py",
+    "--week3-root",
+    "experiments/week3_galaxyppg_regime_oracle_2026-05-13",
+    "--output-root",
+    "experiments/week4_galaxyppg_lightweight_router_2026-05-13"
+  ],
+  "inputs": {
+    "week3_root": "experiments/week3_galaxyppg_regime_oracle_2026-05-13",
+    "week2_predictions": "experiments/week2_galaxyppg_corrected_2026-05-01/predictions/week2_all_standardized_predictions.csv"
+  },
+  "feature_sets": {
+    "motion_only": [
+      "acc_norm_mean",
+      "acc_norm_std",
+      "acc_dominant_frequency_hz",
+      "acc_cadence_band_power_fraction"
+    ],
+    "quality_only": [
+      "ppg_amplitude_range",
+      "ppg_clipping_rate",
+      "ppg_flatline_rate",
+      "ppg_autocorr_peak_strength",
+      "ppg_spectral_entropy",
+      "ppg_spectral_peak_sharpness",
+      "beat_count_consistency",
+      "peak_spectral_disagreement_bpm"
+    ],
+    "motion_quality": [
+      "acc_norm_mean",
+      "acc_norm_std",
+      "acc_dominant_frequency_hz",
+      "acc_cadence_band_power_fraction",
+      "ppg_amplitude_range",
+      "ppg_clipping_rate",
+      "ppg_flatline_rate",
+      "ppg_autocorr_peak_strength",
+      "ppg_spectral_entropy",
+      "ppg_spectral_peak_sharpness",
+      "beat_count_consistency",
+      "peak_spectral_disagreement_bpm"
+    ]
+  },
+  "artifacts": {
+    "motion_quality_features_csv": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/features/week4_motion_quality_features.csv",
+    "router_predictions_csv": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/predictions/week4_routed_predictions.csv",
+    "router_metrics_json": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/metrics/routing_summary.json",
+    "fold_assignments_csv": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/tables/router_fold_assignments.csv",
+    "router_model_manifest_json": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/router_model_manifest.json"
+  }
+}

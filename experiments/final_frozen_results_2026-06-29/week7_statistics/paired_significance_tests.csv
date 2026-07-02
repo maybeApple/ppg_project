@@ -1,0 +1,4 @@
+metric,n_participants,mean_delta_best_single_minus_router,median_delta_best_single_minus_router,bootstrap_ci95_low,bootstrap_ci95_high,paired_ttest_p_value,wilcoxon_signed_rank_p_value,interpretation
+MAE,5,-0.09033158559922558,0.02300848922481258,-0.49099362036451843,0.3103304491660673,0.7277094499255754,1.0,positive means router improved over the participant's best single expert
+p95_absolute_error,5,-0.6739879359063558,0.4838153749679286,-2.8396979923648686,1.3364387168576166,0.5961934679166045,0.8125,positive means router improved over the participant's best single expert
+catastrophic_error_rate_20bpm,5,-0.0002995861028418395,-0.0006385696040868416,-0.010156274617027186,0.007774984048579895,0.9580086680504563,1.0,positive means router improved over the participant's best single expert
