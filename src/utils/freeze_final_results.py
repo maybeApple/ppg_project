@@ -54,9 +54,11 @@ def main() -> None:
         ("configs", Path("configs"), output_root / "configs"),
         ("week2_tables", args.week2_root / "tables", output_root / "week2" / "tables"),
         ("week2_metrics", args.week2_root / "metrics", output_root / "week2" / "metrics"),
+        ("week2_predictions", args.week2_root / "predictions", output_root / "week2" / "predictions"),
         ("week2_figures", args.week2_root / "figures", output_root / "week2" / "figures"),
         ("week3_tables", args.week3_root / "tables", output_root / "week3" / "tables"),
         ("week3_metrics", args.week3_root / "metrics", output_root / "week3" / "metrics"),
+        ("week3_predictions", args.week3_root / "predictions", output_root / "week3" / "predictions"),
         ("week3_figures", args.week3_root / "figures", output_root / "week3" / "figures"),
         ("week4_tables", args.week4_root / "tables", output_root / "week4" / "tables"),
         ("week4_metrics", args.week4_root / "metrics", output_root / "week4" / "metrics"),
@@ -68,6 +70,15 @@ def main() -> None:
     for label, source, target in copy_groups:
         manifest["artifacts"].append(copy_tree_if_exists(label, source, target))
 
+    manifest["artifacts"].append(
+        copy_tree_if_exists(
+            "week2_runs",
+            args.week2_root / "runs",
+            output_root / "week2" / "runs",
+            ignore_suffixes=(".joblib", ".pkl", ".pt"),
+        )
+    )
+
     copy_files = [
         ("reproducibility_manifest_json", Path("experiments/reproducibility_manifest.json"), output_root / "reproducibility_manifest.json"),
         ("reproducibility_manifest_md", Path("experiments/reproducibility_manifest.md"), output_root / "reproducibility_manifest.md"),
@@ -77,6 +88,7 @@ def main() -> None:
         ("week2_memo", args.week2_root / "week2_memo.md", output_root / "week2" / "week2_memo.md"),
         ("week3_memo", args.week3_root / "week3_regime_analysis.md", output_root / "week3" / "week3_regime_analysis.md"),
         ("week3_metrics_json", args.week3_root / "metrics.json", output_root / "week3" / "metrics.json"),
+        ("week3_predictions_csv", args.week3_root / "predictions.csv", output_root / "week3" / "predictions.csv"),
         ("week3_run_config", args.week3_root / "run_config.json", output_root / "week3" / "run_config.json"),
         ("week3_run_log", args.week3_root / "run_log.json", output_root / "week3" / "run_log.json"),
         ("week4_memo", args.week4_root / "week4_lightweight_router.md", output_root / "week4" / "week4_lightweight_router.md"),
@@ -98,7 +110,12 @@ def main() -> None:
     print(f"frozen_results={output_root}")
 
 
-def copy_tree_if_exists(label: str, source: Path, target: Path) -> dict[str, Any]:
+def copy_tree_if_exists(
+    label: str,
+    source: Path,
+    target: Path,
+    ignore_suffixes: tuple[str, ...] = (),
+) -> dict[str, Any]:
     """Copy a directory tree when present and record missing groups explicitly."""
 
     if not source.exists():
@@ -111,7 +128,10 @@ def copy_tree_if_exists(label: str, source: Path, target: Path) -> dict[str, Any
         }
     if target.exists():
         shutil.rmtree(target)
-    shutil.copytree(source, target)
+    ignore = None
+    if ignore_suffixes:
+        ignore = lambda _dir, names: [name for name in names if name.endswith(ignore_suffixes)]
+    shutil.copytree(source, target, ignore=ignore)
     return {
         "label": label,
         "source": source.as_posix(),
@@ -225,9 +245,9 @@ def write_readme(path: Path, manifest: dict[str, Any]) -> None:
         [
             "## Large Artifacts",
             "",
-            "Week 4 routed prediction CSVs and trained router `.joblib` files are committed because they are required for acceptance.",
+            "Week 2 prediction CSVs, run configs/logs/metrics, corrected embedding `.npy` files, Week 3 oracle prediction files, and Week 4 routed prediction CSVs plus trained router `.joblib` files are committed because they are required for acceptance.",
             "",
-            "Large embedding `.npy` arrays, raw data, external checkpoints, and unrelated experiment run folders are intentionally not committed.",
+            "Raw data, external checkpoints, downstream estimator `.joblib` files outside the Week 4 router models, and unrelated experiment run folders are intentionally not committed.",
             "",
         ]
     )

@@ -1,0 +1,40 @@
+{
+  "model_name": "papagei",
+  "created_at_local": "2026-05-01T20:42:17.114519",
+  "num_windows": 35135,
+  "embedding_dim": 512,
+  "target_sampling_hz": 125,
+  "features_path": "papagei_features.npy",
+  "metadata_path": "papagei_metadata.csv",
+  "manifest_path": "papagei_manifest.json",
+  "source_windows_path": "../../../../../data/processed/windows/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_windows.jsonl.gz",
+  "checkpoint_path": "../../../../../external/papagei-foundation-model/weights/papagei_s.pt",
+  "external_repo_root": "../../../../../src/vendor/papagei_resnet.py",
+  "processed_manifest_path": "data\\processed\\galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json",
+  "experiment_config_path": "configs\\experiment_modes.json",
+  "experiment_mode": "model_faithful",
+  "preprocessing": {
+    "mode": "model_faithful",
+    "target_sampling_hz": 125,
+    "apply_bandpass": true,
+    "normalization": "per_window_zscore",
+    "low_hz": 0.5,
+    "high_hz": 12.0,
+    "filter_order": 4,
+    "operation_order": [
+      "timestamp_resample",
+      "per_window_zscore",
+      "chebyshev2_bandpass"
+    ]
+  },
+  "preprocessing_mode": "model_faithful",
+  "apply_bandpass": true,
+  "normalization": "per_window_zscore",
+  "apply_zscore": true,
+  "batch_size": 128,
+  "device": "cpu",
+  "model_code_strategy": "vendored_minimal_source",
+  "model_code_path": "E:\\PycharmProjects\\ppg_project\\src\\vendor\\papagei_resnet.py",
+  "upstream_repository": "https://github.com/Nokia-Bell-Labs/papagei-foundation-model",
+  "upstream_commit": "0c537dad4d2850e15b724260de820dd68d77f0b0"
+}

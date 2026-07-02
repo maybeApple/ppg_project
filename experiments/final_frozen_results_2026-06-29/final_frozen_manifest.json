@@ -30,6 +30,13 @@
       "reason": null
     },
     {
+      "label": "week2_predictions",
+      "source": "experiments/week2_galaxyppg_corrected_2026-05-01/predictions",
+      "target": "experiments/final_frozen_results_2026-06-29/week2/predictions",
+      "copied": true,
+      "reason": null
+    },
+    {
       "label": "week2_figures",
       "source": "experiments/week2_galaxyppg_corrected_2026-05-01/figures",
       "target": "experiments/final_frozen_results_2026-06-29/week2/figures",
@@ -47,6 +54,13 @@
       "label": "week3_metrics",
       "source": "experiments/week3_galaxyppg_regime_oracle_2026-05-13/metrics",
       "target": "experiments/final_frozen_results_2026-06-29/week3/metrics",
+      "copied": true,
+      "reason": null
+    },
+    {
+      "label": "week3_predictions",
+      "source": "experiments/week3_galaxyppg_regime_oracle_2026-05-13/predictions",
+      "target": "experiments/final_frozen_results_2026-06-29/week3/predictions",
       "copied": true,
       "reason": null
     },
@@ -96,6 +110,13 @@
       "label": "week4_figures",
       "source": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/figures",
       "target": "experiments/final_frozen_results_2026-06-29/week4/figures",
+      "copied": true,
+      "reason": null
+    },
+    {
+      "label": "week2_runs",
+      "source": "experiments/week2_galaxyppg_corrected_2026-05-01/runs",
+      "target": "experiments/final_frozen_results_2026-06-29/week2/runs",
       "copied": true,
       "reason": null
     }
@@ -154,6 +175,13 @@
       "label": "week3_metrics_json",
       "source": "experiments/week3_galaxyppg_regime_oracle_2026-05-13/metrics.json",
       "target": "experiments/final_frozen_results_2026-06-29/week3/metrics.json",
+      "copied": true,
+      "reason": null
+    },
+    {
+      "label": "week3_predictions_csv",
+      "source": "experiments/week3_galaxyppg_regime_oracle_2026-05-13/predictions.csv",
+      "target": "experiments/final_frozen_results_2026-06-29/week3/predictions.csv",
       "copied": true,
       "reason": null
     },

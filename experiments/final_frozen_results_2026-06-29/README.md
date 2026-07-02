@@ -29,18 +29,20 @@ python -m src.utils.freeze_final_results --week2-root experiments/week2_galaxypp
 
 ## Large Artifacts
 
-Week 4 routed prediction CSVs and trained router `.joblib` files are committed because they are required for acceptance.
+Week 2 prediction CSVs, run configs/logs/metrics, corrected embedding `.npy` files, Week 3 oracle prediction files, and Week 4 routed prediction CSVs plus trained router `.joblib` files are committed because they are required for acceptance.
 
-Large embedding `.npy` arrays, raw data, external checkpoints, and unrelated experiment run folders are intentionally not committed.
+Raw data, external checkpoints, downstream estimator `.joblib` files outside the Week 4 router models, and unrelated experiment run folders are intentionally not committed.
 
 ## Artifact Groups
 
 - configs: `experiments/final_frozen_results_2026-06-29/configs` copied=True
 - week2_tables: `experiments/final_frozen_results_2026-06-29/week2/tables` copied=True
 - week2_metrics: `experiments/final_frozen_results_2026-06-29/week2/metrics` copied=True
+- week2_predictions: `experiments/final_frozen_results_2026-06-29/week2/predictions` copied=True
 - week2_figures: `experiments/final_frozen_results_2026-06-29/week2/figures` copied=True
 - week3_tables: `experiments/final_frozen_results_2026-06-29/week3/tables` copied=True
 - week3_metrics: `experiments/final_frozen_results_2026-06-29/week3/metrics` copied=True
+- week3_predictions: `experiments/final_frozen_results_2026-06-29/week3/predictions` copied=True
 - week3_figures: `experiments/final_frozen_results_2026-06-29/week3/figures` copied=True
 - week4_tables: `experiments/final_frozen_results_2026-06-29/week4/tables` copied=True
 - week4_metrics: `experiments/final_frozen_results_2026-06-29/week4/metrics` copied=True
@@ -48,6 +50,7 @@ Large embedding `.npy` arrays, raw data, external checkpoints, and unrelated exp
 - week4_predictions: `experiments/final_frozen_results_2026-06-29/week4/predictions` copied=True
 - week4_models: `experiments/final_frozen_results_2026-06-29/week4/models` copied=True
 - week4_figures: `experiments/final_frozen_results_2026-06-29/week4/figures` copied=True
+- week2_runs: `experiments/final_frozen_results_2026-06-29/week2/runs` copied=True
 
 ## Artifact Files
 
@@ -59,6 +62,7 @@ Large embedding `.npy` arrays, raw data, external checkpoints, and unrelated exp
 - week2_memo: `experiments/final_frozen_results_2026-06-29/week2/week2_memo.md` copied=True
 - week3_memo: `experiments/final_frozen_results_2026-06-29/week3/week3_regime_analysis.md` copied=True
 - week3_metrics_json: `experiments/final_frozen_results_2026-06-29/week3/metrics.json` copied=True
+- week3_predictions_csv: `experiments/final_frozen_results_2026-06-29/week3/predictions.csv` copied=True
 - week3_run_config: `experiments/final_frozen_results_2026-06-29/week3/run_config.json` copied=True
 - week3_run_log: `experiments/final_frozen_results_2026-06-29/week3/run_log.json` copied=True
 - week4_memo: `experiments/final_frozen_results_2026-06-29/week4/week4_lightweight_router.md` copied=True

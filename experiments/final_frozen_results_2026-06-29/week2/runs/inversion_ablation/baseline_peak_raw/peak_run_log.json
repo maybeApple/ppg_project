@@ -1,0 +1,232 @@
+{
+  "module": "src.baseline.run_baseline",
+  "argv": [
+    "E:\\PycharmProjects\\ppg_project\\src\\baseline\\run_baseline.py",
+    "--processed-manifest",
+    "data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json",
+    "--split-config",
+    "configs/galaxyppg_submission_split.json",
+    "--method",
+    "peak",
+    "--ppg-source",
+    "raw",
+    "--output-dir",
+    "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/baseline_peak_raw"
+  ],
+  "input_source": {
+    "mode": "processed_manifest",
+    "processed_manifest_path": "E:\\PycharmProjects\\ppg_project\\data\\processed\\galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json",
+    "split_config_path": "E:\\PycharmProjects\\ppg_project\\configs\\galaxyppg_submission_split.json",
+    "ppg_source": "raw"
+  },
+  "predictions_path": "experiments\\week2_galaxyppg_corrected_2026-05-01\\runs\\inversion_ablation\\baseline_peak_raw\\peak_predictions.csv",
+  "metrics_path": "experiments\\week2_galaxyppg_corrected_2026-05-01\\runs\\inversion_ablation\\baseline_peak_raw\\peak_metrics.json",
+  "metrics": {
+    "method": "peak",
+    "reference_source": "ibi",
+    "window_seconds": 10.0,
+    "stride_seconds": 2.0,
+    "stride_rationale": "A 2-second stride preserves more temporal detail than 5 seconds while avoiding the extreme redundancy of a 1-second stride. With 10-second windows and participant-level splits, it is a practical default for early experiments.",
+    "label_method": "beat_interval_instant_hr",
+    "label_aggregation": "median",
+    "min_valid_beats": 2,
+    "min_reference_samples": 1,
+    "label_generation": {
+      "method": "beat_interval_instant_hr",
+      "aggregation": "median",
+      "min_valid_beats": 2,
+      "min_reference_samples": 1,
+      "instant_hr_formula": "instant_hr_bpm = 60000 / rr_interval_ms",
+      "ibi_reference": "use provided positive rr_interval_ms values from IBI files",
+      "ecg_reference": "detect ECG R peaks inside each window, compute adjacent R-R intervals, and assign each interval timestamp to the second beat",
+      "window_target": "median instantaneous HR inside each window",
+      "discard_rule": "drop windows with fewer than 2 valid beat intervals"
+    },
+    "ppg_inverted": false,
+    "ppg_source": "raw",
+    "ppg_canonical_source": "GalaxyWatch/PPG.csv:ppg_raw_inverted",
+    "test_size": 0.2,
+    "random_state": 42,
+    "train_participants": [
+      "P02",
+      "P03",
+      "P05",
+      "P06",
+      "P08",
+      "P09",
+      "P10",
+      "P11",
+      "P12",
+      "P13",
+      "P14",
+      "P15",
+      "P19",
+      "P20",
+      "P21",
+      "P22",
+      "P23",
+      "P24"
+    ],
+    "test_participants": [
+      "P04",
+      "P07",
+      "P16",
+      "P17",
+      "P18"
+    ],
+    "split_config_path": "E:\\PycharmProjects\\ppg_project\\configs\\galaxyppg_submission_split.json",
+    "split_name": "galaxyppg_submission_fixed_split",
+    "validation_strategy": {
+      "type": "GroupKFold",
+      "n_splits": 5,
+      "shuffle": false,
+      "group_field": "participant_id",
+      "note": "There is no single fixed validation set. Validation uses deterministic participant-level GroupKFold over the fixed training participants."
+    },
+    "validation_folds": [
+      {
+        "fold": 1,
+        "train_participants": [
+          "P02",
+          "P03",
+          "P05",
+          "P06",
+          "P08",
+          "P10",
+          "P11",
+          "P12",
+          "P13",
+          "P14",
+          "P15",
+          "P21",
+          "P22",
+          "P23",
+          "P24"
+        ],
+        "validation_participants": [
+          "P09",
+          "P19",
+          "P20"
+        ],
+        "num_train_windows": 22866,
+        "num_validation_windows": 4638
+      },
+      {
+        "fold": 2,
+        "train_participants": [
+          "P02",
+          "P03",
+          "P05",
+          "P06",
+          "P09",
+          "P10",
+          "P11",
+          "P12",
+          "P13",
+          "P14",
+          "P19",
+          "P20",
+          "P21",
+          "P22",
+          "P23"
+        ],
+        "validation_participants": [
+          "P08",
+          "P15",
+          "P24"
+        ],
+        "num_train_windows": 22884,
+        "num_validation_windows": 4620
+      },
+      {
+        "fold": 3,
+        "train_participants": [
+          "P02",
+          "P05",
+          "P06",
+          "P08",
+          "P09",
+          "P11",
+          "P12",
+          "P15",
+          "P19",
+          "P20",
+          "P21",
+          "P22",
+          "P23",
+          "P24"
+        ],
+        "validation_participants": [
+          "P03",
+          "P10",
+          "P13",
+          "P14"
+        ],
+        "num_train_windows": 21437,
+        "num_validation_windows": 6067
+      },
+      {
+        "fold": 4,
+        "train_participants": [
+          "P03",
+          "P06",
+          "P08",
+          "P09",
+          "P10",
+          "P11",
+          "P13",
+          "P14",
+          "P15",
+          "P19",
+          "P20",
+          "P22",
+          "P23",
+          "P24"
+        ],
+        "validation_participants": [
+          "P02",
+          "P05",
+          "P12",
+          "P21"
+        ],
+        "num_train_windows": 21410,
+        "num_validation_windows": 6094
+      },
+      {
+        "fold": 5,
+        "train_participants": [
+          "P02",
+          "P03",
+          "P05",
+          "P08",
+          "P09",
+          "P10",
+          "P12",
+          "P13",
+          "P14",
+          "P15",
+          "P19",
+          "P20",
+          "P21",
+          "P24"
+        ],
+        "validation_participants": [
+          "P06",
+          "P11",
+          "P22",
+          "P23"
+        ],
+        "num_train_windows": 21419,
+        "num_validation_windows": 6085
+      }
+    ],
+    "num_windows": 7631,
+    "num_valid_predictions": 7631,
+    "coverage": 1.0,
+    "mae": 7.470450817434321,
+    "rmse": 16.02987972626808,
+    "median_absolute_error": 2.4523329805470553,
+    "p95_absolute_error": 38.032114305993986,
+    "catastrophic_error_rate_20bpm": 0.10077316210195256
+  }
+}

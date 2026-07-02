@@ -72,3 +72,4 @@ experiments/final_frozen_results_*/
 !experiments/final_frozen_results_2026-06-29/
 !experiments/final_frozen_results_2026-06-29/**
 experiments/final_frozen_results_2026-06-29/**/*.npy
+!experiments/final_frozen_results_2026-06-29/week2/runs/**/*features.npy
