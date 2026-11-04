@@ -1,0 +1,31 @@
+{
+  "schema_version": "run_config_v1",
+  "run_type": "week2_experiment_run",
+  "module": "src.regression.train_regressor",
+  "argv": [
+    "E:\\PycharmProjects\\ppg_project\\src\\regression\\train_regressor.py",
+    "--feature-manifest",
+    "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_features_causal_running_zscore/pulseppg_manifest.json",
+    "--regressor",
+    "linear",
+    "--random-state",
+    "42",
+    "--split-config",
+    "configs/galaxyppg_submission_split.json",
+    "--output-dir",
+    "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_causal_running_zscore_linear"
+  ],
+  "inputs": {
+    "processed_manifest_path": "data\\processed\\galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json",
+    "split_config_path": "E:\\PycharmProjects\\ppg_project\\configs\\galaxyppg_submission_split.json",
+    "feature_manifest_path": "experiments\\week2_galaxyppg_corrected_2026-05-01\\runs\\model_faithful\\pulseppg_features_causal_running_zscore\\pulseppg_manifest.json",
+    "ppg_source": null
+  },
+  "artifacts": {
+    "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_causal_running_zscore_linear/predictions.csv",
+    "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_causal_running_zscore_linear/metrics.json",
+    "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_causal_running_zscore_linear/run_log.json",
+    "source_predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_causal_running_zscore_linear/pulseppg_linear_predictions.csv",
+    "source_metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_causal_running_zscore_linear/pulseppg_linear_metrics.json"
+  }
+}

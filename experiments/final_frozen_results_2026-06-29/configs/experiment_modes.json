@@ -1,0 +1,49 @@
+{
+  "schema_version": "experiment_modes_v1",
+  "default_mode": "harmonized",
+  "modes": {
+    "harmonized": {
+      "description": "Controlled comparison mode: same corrected windows, labels, split, resampling policy, band-pass filter, and per-window z-score for all feature extractors.",
+      "preprocessing": {
+        "mode": "harmonized",
+        "apply_bandpass": true,
+        "normalization": "per_window_zscore",
+        "low_hz": 0.5,
+        "high_hz": 12.0,
+        "filter_order": 4
+      }
+    },
+    "model_faithful": {
+      "description": "Model-faithful mode: same corrected windows and labels, but model-specific signal assumptions can be selected explicitly.",
+      "models": {
+        "pulseppg": {
+          "preprocessing": {
+            "mode": "model_faithful",
+            "apply_bandpass": true,
+            "normalization": "per_window_zscore",
+            "normalization_options": [
+              "none",
+              "per_window_zscore",
+              "person_specific_zscore",
+              "causal_running_zscore"
+            ],
+            "low_hz": 0.5,
+            "high_hz": 12.0,
+            "filter_order": 4
+          }
+        },
+        "papagei": {
+          "preprocessing": {
+            "mode": "model_faithful",
+            "apply_bandpass": true,
+            "normalization": "per_window_zscore",
+            "probe": "frozen_embedding_linear_or_ridge",
+            "low_hz": 0.5,
+            "high_hz": 12.0,
+            "filter_order": 4
+          }
+        }
+      }
+    }
+  }
+}

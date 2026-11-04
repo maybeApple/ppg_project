@@ -1,0 +1,250 @@
+{
+  "artifact_name": "galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median",
+  "created_at_utc": "2026-04-24T15:22:33.782661+00:00",
+  "dataset_root": "../raw/GalaxyPPG",
+  "canonical_schema": {
+    "version": "canonical_ppg_v1",
+    "ppg_columns": [
+      "participant_id",
+      "timestamp_ms",
+      "ppg",
+      "ppg_raw",
+      "ppg_inverted",
+      "ppg_canonical_source",
+      "session_id",
+      "session_name",
+      "activity_label",
+      "dataset",
+      "sensor"
+    ],
+    "accelerometer_columns": [
+      "participant_id",
+      "timestamp_ms",
+      "acc_x",
+      "acc_y",
+      "acc_z",
+      "session_id",
+      "session_name",
+      "activity_label",
+      "dataset",
+      "sensor"
+    ],
+    "reference_columns": [
+      "participant_id",
+      "timestamp_ms",
+      "ecg_uv",
+      "rr_interval_ms",
+      "hr_bpm",
+      "reference_source",
+      "session_id",
+      "session_name",
+      "activity_label",
+      "dataset",
+      "sensor"
+    ],
+    "timestamp_unit": "unix_ms",
+    "ppg_policy": "dataset-specific corrections happen at load time; canonical ppg is model input",
+    "reference_policy": "ECG or IBI references are converted to beat-interval instantaneous HR for labels"
+  },
+  "reference_source": "ibi",
+  "ppg_inverted": true,
+  "ppg_canonical_source": "GalaxyWatch/PPG.csv:ppg_raw_inverted",
+  "window_seconds": 10.0,
+  "stride_seconds": 2.0,
+  "label_method": "beat_interval_instant_hr",
+  "label_aggregation": "median",
+  "min_valid_beats": 2,
+  "min_reference_samples": 1,
+  "label_generation": {
+    "method": "beat_interval_instant_hr",
+    "aggregation": "median",
+    "min_valid_beats": 2,
+    "min_reference_samples": 1,
+    "instant_hr_formula": "instant_hr_bpm = 60000 / rr_interval_ms",
+    "ibi_reference": "use provided positive rr_interval_ms values from IBI files",
+    "ecg_reference": "detect ECG R peaks inside each window, compute adjacent R-R intervals, and assign each interval timestamp to the second beat",
+    "window_target": "median instantaneous HR inside each window",
+    "discard_rule": "drop windows with fewer than 2 valid beat intervals"
+  },
+  "test_size": 0.2,
+  "random_state": 42,
+  "num_windows": 35135,
+  "num_train_windows": 27504,
+  "num_test_windows": 7631,
+  "num_participants": 23,
+  "train_participants": [
+    "P02",
+    "P03",
+    "P05",
+    "P06",
+    "P08",
+    "P09",
+    "P10",
+    "P11",
+    "P12",
+    "P13",
+    "P14",
+    "P15",
+    "P19",
+    "P20",
+    "P21",
+    "P22",
+    "P23",
+    "P24"
+  ],
+  "test_participants": [
+    "P04",
+    "P07",
+    "P16",
+    "P17",
+    "P18"
+  ],
+  "split_config_path": "../../configs/galaxyppg_submission_split.json",
+  "split_name": "galaxyppg_submission_fixed_split",
+  "validation_strategy": {
+    "type": "GroupKFold",
+    "n_splits": 5,
+    "shuffle": false,
+    "group_field": "participant_id",
+    "note": "There is no single fixed validation set. Validation uses deterministic participant-level GroupKFold over the fixed training participants."
+  },
+  "validation_folds": [
+    {
+      "fold": 1,
+      "train_participants": [
+        "P02",
+        "P03",
+        "P05",
+        "P06",
+        "P08",
+        "P10",
+        "P11",
+        "P12",
+        "P13",
+        "P14",
+        "P15",
+        "P21",
+        "P22",
+        "P23",
+        "P24"
+      ],
+      "validation_participants": [
+        "P09",
+        "P19",
+        "P20"
+      ],
+      "num_train_windows": 22866,
+      "num_validation_windows": 4638
+    },
+    {
+      "fold": 2,
+      "train_participants": [
+        "P02",
+        "P03",
+        "P05",
+        "P06",
+        "P09",
+        "P10",
+        "P11",
+        "P12",
+        "P13",
+        "P14",
+        "P19",
+        "P20",
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "validation_participants": [
+        "P08",
+        "P15",
+        "P24"
+      ],
+      "num_train_windows": 22884,
+      "num_validation_windows": 4620
+    },
+    {
+      "fold": 3,
+      "train_participants": [
+        "P02",
+        "P05",
+        "P06",
+        "P08",
+        "P09",
+        "P11",
+        "P12",
+        "P15",
+        "P19",
+        "P20",
+        "P21",
+        "P22",
+        "P23",
+        "P24"
+      ],
+      "validation_participants": [
+        "P03",
+        "P10",
+        "P13",
+        "P14"
+      ],
+      "num_train_windows": 21437,
+      "num_validation_windows": 6067
+    },
+    {
+      "fold": 4,
+      "train_participants": [
+        "P03",
+        "P06",
+        "P08",
+        "P09",
+        "P10",
+        "P11",
+        "P13",
+        "P14",
+        "P15",
+        "P19",
+        "P20",
+        "P22",
+        "P23",
+        "P24"
+      ],
+      "validation_participants": [
+        "P02",
+        "P05",
+        "P12",
+        "P21"
+      ],
+      "num_train_windows": 21410,
+      "num_validation_windows": 6094
+    },
+    {
+      "fold": 5,
+      "train_participants": [
+        "P02",
+        "P03",
+        "P05",
+        "P08",
+        "P09",
+        "P10",
+        "P12",
+        "P13",
+        "P14",
+        "P15",
+        "P19",
+        "P20",
+        "P21",
+        "P24"
+      ],
+      "validation_participants": [
+        "P06",
+        "P11",
+        "P22",
+        "P23"
+      ],
+      "num_train_windows": 21419,
+      "num_validation_windows": 6085
+    }
+  ],
+  "windows_path": "windows/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_windows.jsonl.gz",
+  "labels_path": "labels/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_labels.csv"
+}

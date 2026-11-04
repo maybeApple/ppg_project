@@ -1,0 +1,17 @@
+| feature_set | fold | heldout_participant | n_train | n_test | positive_rate_train | estimator_type | model_path |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| motion_only | 1 | P04 | 6066 | 1563 | 0.4769 | logistic_regression | experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/motion_only_fold_01_P04.joblib |
+| motion_only | 2 | P07 | 6139 | 1490 | 0.4530 | logistic_regression | experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/motion_only_fold_02_P07.joblib |
+| motion_only | 3 | P16 | 6125 | 1504 | 0.4601 | logistic_regression | experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/motion_only_fold_03_P16.joblib |
+| motion_only | 4 | P17 | 6123 | 1506 | 0.4602 | logistic_regression | experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/motion_only_fold_04_P17.joblib |
+| motion_only | 5 | P18 | 6063 | 1566 | 0.5275 | logistic_regression | experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/motion_only_fold_05_P18.joblib |
+| quality_only | 1 | P04 | 6066 | 1563 | 0.4769 | logistic_regression | experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/quality_only_fold_01_P04.joblib |
+| quality_only | 2 | P07 | 6139 | 1490 | 0.4530 | logistic_regression | experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/quality_only_fold_02_P07.joblib |
+| quality_only | 3 | P16 | 6125 | 1504 | 0.4601 | logistic_regression | experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/quality_only_fold_03_P16.joblib |
+| quality_only | 4 | P17 | 6123 | 1506 | 0.4602 | logistic_regression | experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/quality_only_fold_04_P17.joblib |
+| quality_only | 5 | P18 | 6063 | 1566 | 0.5275 | logistic_regression | experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/quality_only_fold_05_P18.joblib |
+| motion_quality | 1 | P04 | 6066 | 1563 | 0.4769 | logistic_regression | experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/motion_quality_fold_01_P04.joblib |
+| motion_quality | 2 | P07 | 6139 | 1490 | 0.4530 | logistic_regression | experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/motion_quality_fold_02_P07.joblib |
+| motion_quality | 3 | P16 | 6125 | 1504 | 0.4601 | logistic_regression | experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/motion_quality_fold_03_P16.joblib |
+| motion_quality | 4 | P17 | 6123 | 1506 | 0.4602 | logistic_regression | experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/motion_quality_fold_04_P17.joblib |
+| motion_quality | 5 | P18 | 6063 | 1566 | 0.5275 | logistic_regression | experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/motion_quality_fold_05_P18.joblib |

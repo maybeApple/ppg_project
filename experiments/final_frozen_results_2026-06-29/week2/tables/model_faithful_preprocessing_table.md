@@ -1,0 +1,14 @@
+| Model | Preprocessing mode | Normalization | Probe / Regressor | MAE | RMSE | Median AE | P95 AE | Catastrophic error >20 bpm | n_windows |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| pulseppg | model_faithful | causal_running_zscore | random_forest | 6.8606 | 11.3287 | 3.7344 | 25.5460 | 0.0798 | 7631 |
+| pulseppg | model_faithful | per_window_zscore | ridge | 8.0508 | 12.4977 | 4.8660 | 27.9149 | 0.0921 | 7631 |
+| pulseppg | model_faithful | none | ridge | 8.0510 | 12.4975 | 4.8655 | 27.9128 | 0.0921 | 7631 |
+| pulseppg | model_faithful | person_specific_zscore | ridge | 8.0526 | 12.4986 | 4.8739 | 27.9465 | 0.0923 | 7631 |
+| pulseppg | model_faithful | causal_running_zscore | ridge | 8.0533 | 12.5001 | 4.8737 | 27.9412 | 0.0923 | 7631 |
+| pulseppg | model_faithful | per_window_zscore | linear | 8.1390 | 12.5691 | 4.9827 | 28.1586 | 0.0932 | 7631 |
+| pulseppg | model_faithful | none | linear | 8.1392 | 12.5690 | 4.9967 | 28.1829 | 0.0932 | 7631 |
+| pulseppg | model_faithful | person_specific_zscore | linear | 8.1403 | 12.5695 | 4.9886 | 28.1899 | 0.0926 | 7631 |
+| pulseppg | model_faithful | causal_running_zscore | linear | 8.1422 | 12.5718 | 5.0061 | 28.1688 | 0.0930 | 7631 |
+| papagei | model_faithful | per_window_zscore | ridge | 11.4621 | 16.5681 | 8.0845 | 35.8505 | 0.1407 | 7631 |
+| papagei | model_faithful | per_window_zscore | random_forest | 11.4710 | 16.4607 | 8.1681 | 35.6672 | 0.1389 | 7631 |
+| papagei | model_faithful | per_window_zscore | linear | 11.5290 | 16.7805 | 8.1172 | 36.0486 | 0.1400 | 7631 |

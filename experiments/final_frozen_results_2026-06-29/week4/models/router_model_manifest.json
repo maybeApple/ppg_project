@@ -1,0 +1,260 @@
+{
+  "schema_version": "week4_router_model_manifest_v1",
+  "model_files": [
+    {
+      "feature_set": "motion_only",
+      "fold": 1,
+      "heldout_participant": "P04",
+      "estimator_type": "logistic_regression",
+      "feature_columns": [
+        "acc_norm_mean",
+        "acc_norm_std",
+        "acc_dominant_frequency_hz",
+        "acc_cadence_band_power_fraction"
+      ],
+      "model_path": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/motion_only_fold_01_P04.joblib"
+    },
+    {
+      "feature_set": "motion_only",
+      "fold": 2,
+      "heldout_participant": "P07",
+      "estimator_type": "logistic_regression",
+      "feature_columns": [
+        "acc_norm_mean",
+        "acc_norm_std",
+        "acc_dominant_frequency_hz",
+        "acc_cadence_band_power_fraction"
+      ],
+      "model_path": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/motion_only_fold_02_P07.joblib"
+    },
+    {
+      "feature_set": "motion_only",
+      "fold": 3,
+      "heldout_participant": "P16",
+      "estimator_type": "logistic_regression",
+      "feature_columns": [
+        "acc_norm_mean",
+        "acc_norm_std",
+        "acc_dominant_frequency_hz",
+        "acc_cadence_band_power_fraction"
+      ],
+      "model_path": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/motion_only_fold_03_P16.joblib"
+    },
+    {
+      "feature_set": "motion_only",
+      "fold": 4,
+      "heldout_participant": "P17",
+      "estimator_type": "logistic_regression",
+      "feature_columns": [
+        "acc_norm_mean",
+        "acc_norm_std",
+        "acc_dominant_frequency_hz",
+        "acc_cadence_band_power_fraction"
+      ],
+      "model_path": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/motion_only_fold_04_P17.joblib"
+    },
+    {
+      "feature_set": "motion_only",
+      "fold": 5,
+      "heldout_participant": "P18",
+      "estimator_type": "logistic_regression",
+      "feature_columns": [
+        "acc_norm_mean",
+        "acc_norm_std",
+        "acc_dominant_frequency_hz",
+        "acc_cadence_band_power_fraction"
+      ],
+      "model_path": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/motion_only_fold_05_P18.joblib"
+    },
+    {
+      "feature_set": "quality_only",
+      "fold": 1,
+      "heldout_participant": "P04",
+      "estimator_type": "logistic_regression",
+      "feature_columns": [
+        "ppg_amplitude_range",
+        "ppg_clipping_rate",
+        "ppg_flatline_rate",
+        "ppg_autocorr_peak_strength",
+        "ppg_spectral_entropy",
+        "ppg_spectral_peak_sharpness",
+        "beat_count_consistency",
+        "peak_spectral_disagreement_bpm"
+      ],
+      "model_path": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/quality_only_fold_01_P04.joblib"
+    },
+    {
+      "feature_set": "quality_only",
+      "fold": 2,
+      "heldout_participant": "P07",
+      "estimator_type": "logistic_regression",
+      "feature_columns": [
+        "ppg_amplitude_range",
+        "ppg_clipping_rate",
+        "ppg_flatline_rate",
+        "ppg_autocorr_peak_strength",
+        "ppg_spectral_entropy",
+        "ppg_spectral_peak_sharpness",
+        "beat_count_consistency",
+        "peak_spectral_disagreement_bpm"
+      ],
+      "model_path": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/quality_only_fold_02_P07.joblib"
+    },
+    {
+      "feature_set": "quality_only",
+      "fold": 3,
+      "heldout_participant": "P16",
+      "estimator_type": "logistic_regression",
+      "feature_columns": [
+        "ppg_amplitude_range",
+        "ppg_clipping_rate",
+        "ppg_flatline_rate",
+        "ppg_autocorr_peak_strength",
+        "ppg_spectral_entropy",
+        "ppg_spectral_peak_sharpness",
+        "beat_count_consistency",
+        "peak_spectral_disagreement_bpm"
+      ],
+      "model_path": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/quality_only_fold_03_P16.joblib"
+    },
+    {
+      "feature_set": "quality_only",
+      "fold": 4,
+      "heldout_participant": "P17",
+      "estimator_type": "logistic_regression",
+      "feature_columns": [
+        "ppg_amplitude_range",
+        "ppg_clipping_rate",
+        "ppg_flatline_rate",
+        "ppg_autocorr_peak_strength",
+        "ppg_spectral_entropy",
+        "ppg_spectral_peak_sharpness",
+        "beat_count_consistency",
+        "peak_spectral_disagreement_bpm"
+      ],
+      "model_path": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/quality_only_fold_04_P17.joblib"
+    },
+    {
+      "feature_set": "quality_only",
+      "fold": 5,
+      "heldout_participant": "P18",
+      "estimator_type": "logistic_regression",
+      "feature_columns": [
+        "ppg_amplitude_range",
+        "ppg_clipping_rate",
+        "ppg_flatline_rate",
+        "ppg_autocorr_peak_strength",
+        "ppg_spectral_entropy",
+        "ppg_spectral_peak_sharpness",
+        "beat_count_consistency",
+        "peak_spectral_disagreement_bpm"
+      ],
+      "model_path": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/quality_only_fold_05_P18.joblib"
+    },
+    {
+      "feature_set": "motion_quality",
+      "fold": 1,
+      "heldout_participant": "P04",
+      "estimator_type": "logistic_regression",
+      "feature_columns": [
+        "acc_norm_mean",
+        "acc_norm_std",
+        "acc_dominant_frequency_hz",
+        "acc_cadence_band_power_fraction",
+        "ppg_amplitude_range",
+        "ppg_clipping_rate",
+        "ppg_flatline_rate",
+        "ppg_autocorr_peak_strength",
+        "ppg_spectral_entropy",
+        "ppg_spectral_peak_sharpness",
+        "beat_count_consistency",
+        "peak_spectral_disagreement_bpm"
+      ],
+      "model_path": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/motion_quality_fold_01_P04.joblib"
+    },
+    {
+      "feature_set": "motion_quality",
+      "fold": 2,
+      "heldout_participant": "P07",
+      "estimator_type": "logistic_regression",
+      "feature_columns": [
+        "acc_norm_mean",
+        "acc_norm_std",
+        "acc_dominant_frequency_hz",
+        "acc_cadence_band_power_fraction",
+        "ppg_amplitude_range",
+        "ppg_clipping_rate",
+        "ppg_flatline_rate",
+        "ppg_autocorr_peak_strength",
+        "ppg_spectral_entropy",
+        "ppg_spectral_peak_sharpness",
+        "beat_count_consistency",
+        "peak_spectral_disagreement_bpm"
+      ],
+      "model_path": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/motion_quality_fold_02_P07.joblib"
+    },
+    {
+      "feature_set": "motion_quality",
+      "fold": 3,
+      "heldout_participant": "P16",
+      "estimator_type": "logistic_regression",
+      "feature_columns": [
+        "acc_norm_mean",
+        "acc_norm_std",
+        "acc_dominant_frequency_hz",
+        "acc_cadence_band_power_fraction",
+        "ppg_amplitude_range",
+        "ppg_clipping_rate",
+        "ppg_flatline_rate",
+        "ppg_autocorr_peak_strength",
+        "ppg_spectral_entropy",
+        "ppg_spectral_peak_sharpness",
+        "beat_count_consistency",
+        "peak_spectral_disagreement_bpm"
+      ],
+      "model_path": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/motion_quality_fold_03_P16.joblib"
+    },
+    {
+      "feature_set": "motion_quality",
+      "fold": 4,
+      "heldout_participant": "P17",
+      "estimator_type": "logistic_regression",
+      "feature_columns": [
+        "acc_norm_mean",
+        "acc_norm_std",
+        "acc_dominant_frequency_hz",
+        "acc_cadence_band_power_fraction",
+        "ppg_amplitude_range",
+        "ppg_clipping_rate",
+        "ppg_flatline_rate",
+        "ppg_autocorr_peak_strength",
+        "ppg_spectral_entropy",
+        "ppg_spectral_peak_sharpness",
+        "beat_count_consistency",
+        "peak_spectral_disagreement_bpm"
+      ],
+      "model_path": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/motion_quality_fold_04_P17.joblib"
+    },
+    {
+      "feature_set": "motion_quality",
+      "fold": 5,
+      "heldout_participant": "P18",
+      "estimator_type": "logistic_regression",
+      "feature_columns": [
+        "acc_norm_mean",
+        "acc_norm_std",
+        "acc_dominant_frequency_hz",
+        "acc_cadence_band_power_fraction",
+        "ppg_amplitude_range",
+        "ppg_clipping_rate",
+        "ppg_flatline_rate",
+        "ppg_autocorr_peak_strength",
+        "ppg_spectral_entropy",
+        "ppg_spectral_peak_sharpness",
+        "beat_count_consistency",
+        "peak_spectral_disagreement_bpm"
+      ],
+      "model_path": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/motion_quality_fold_05_P18.joblib"
+    }
+  ]
+}

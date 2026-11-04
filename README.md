@@ -1,22 +1,36 @@
 # PPG Heart Rate Estimation
 
-This repository reproduces wrist-PPG heart-rate estimation with classical estimators, frozen PulsePPG / PaPaGei features, and motion- and signal-quality-aware routing.
+This repository reproduces heart-rate estimation on the `GalaxyPPG` dataset with a corrected, auditable processing pipeline.
 
-The reproducible flow uses:
+The current default flow uses:
 
-- Galaxy Watch `PPG.csv`, inverted exactly once at loading into `canonical_ppg_v1`
-- Polar H10 IBI reference labels for GalaxyPPG; ECG-derived intervals for external datasets
-- 10-second windows, 2-second stride, and median instantaneous HR from at least two valid RR intervals (35–220 bpm)
-- peak and spectral estimators, frozen encoder features, and participant-grouped probe/gate fitting
-- explicit input hashes, frozen predictions before final reference evaluation, and separate development and evaluation stages
+- raw input: Galaxy Watch `PPG.csv`
+- mandatory loader-level Galaxy Watch PPG inversion
+- canonical internal signal schema: `canonical_ppg_v1`
+- reference labels: Polar H10 IBI by default, with ECG-derived beat intervals also supported
+- fixed 10-second windows and 2-second stride
+- target: median beat-interval instantaneous HR inside each window
+- classical baselines: peak detection and spectral HR
+- foundation-model features: PulsePPG and PaPaGei
+- downstream regressors: linear, ridge, random forest, gradient boosting
+- selectable experiment modes: `harmonized` and `model_faithful`
 
-The experiment core contains the data/feature pipeline, expert and router training, inference, evaluation, configurations, and runtime dependencies. Tests, audit tools, reports, notebooks, raw recordings, checkpoints, and generated results remain local. Minimal checkpoint-compatible model definitions are vendored under `src/vendor/`; their upstream revisions are recorded in [UPSTREAM.md](src/vendor/UPSTREAM.md).
+The repository is intended to be runnable without manual source edits. The main Galaxy flow requires:
 
-## Current Results
+1. the raw `GalaxyPPG` dataset
+2. the official pretrained model checkpoints
 
-Completed evaluations below use the frozen **v2 preprocessing recipe**. Errors are pooled MAE in bpm on common finite windows.
+The external-validation extension additionally requires the raw PPG-DaLiA and WildPPG wrist datasets.
 
-| Evaluation | Test participants / paired windows | Training-selected single | Original soft router | Peak |
+The minimal model-definition code required to load the checkpoints is already vendored under `src/vendor/`.
+
+## Current Progress (2026-11-04)
+
+The original repository structure and historical experiment artifacts are retained. Five obsolete report, metadata-backfill, status-summary and synthetic-smoke helpers have been removed. The experiment core adds corrected Galaxy fitting, real PPG-DaLiA / WildPPG wrist validation, and adaptive router training and inference.
+
+The corrected Galaxy study uses 18 training and 5 test participants. Expert selection, probe tuning, and gate fitting use participant-grouped training OOF predictions; final predictions are frozen before reference evaluation. All datasets use 10-second windows, a 2-second stride, and median instantaneous HR from valid RR intervals. The recorded results use the frozen v2 preprocessing recipe.
+
+| Evaluation | Test participants / paired windows | Training-selected single MAE | Original soft-router MAE | Peak MAE |
 | --- | --- | --- | --- | --- |
 | GalaxyPPG fixed holdout | 5 / 7,629 | 6.792 | 6.393 | 7.866 |
 | Galaxy → PPG-DaLiA | 15 / 63,737 | 12.523 | 12.135 | 8.654 |
@@ -24,108 +38,31 @@ Completed evaluations below use the frozen **v2 preprocessing recipe**. Errors a
 | PPG-DaLiA within-dataset | 3 / 12,308 | 9.544 | 8.621 | 9.544 |
 | WildPPG wrist within-dataset | 4 / 94,565 | 12.292 | 12.185 | 15.511 |
 
-The original soft router is `motion_quality_soft`. Transfer uses the Galaxy-selected RF expert and frozen gates without target fitting. Within-dataset experiments fit separate linear/Ridge probes and gates using target-training participants only.
+Errors are bpm. Transfer keeps the Galaxy source experts and gates frozen; within-dataset studies fit separate linear/Ridge probes and gates on target-training participants. Native external PPG polarity is retained. WildPPG uses wrist green PPG and wrist ACC, with sternum ECG providing reference intervals.
 
-Nested router development used only the original 18 Galaxy training participants. Across 27,497 common validation windows, Direct MQ achieved MAE **6.223**, compared with **6.655** for legacy soft routing; P95 improved from **29.612** to **27.283** bpm. Selection used equal-participant MAE with participant-level tail guards. Scores used for this development choice are not an independent test.
+Training-only nested router development selected `direct_mq_soft`: MAE improved from 6.655 to 6.223 bpm, with P95 from 29.612 to 27.283 bpm across 27,497 common windows from the original 18 training participants. After the selected system was fitted and frozen, the same-window reassessment produced:
 
-After fitting and freezing the selected `direct_mq_soft` system, reassessment on the same physical windows gave:
-
-| Dataset | Preserved original router MAE | Direct MQ MAE | Original → Direct MQ P95 |
+| Dataset | Original router MAE | Direct MQ MAE | Original → Direct MQ P95 |
 | --- | --- | --- | --- |
-| GalaxyPPG | 6.393 | **6.076** | 26.729 → 25.346 |
-| PPG-DaLiA | **12.135** | 12.155 | 32.784 → 32.921 |
-| WildPPG wrist | 18.117 | **15.025** | 48.825 → 49.646 |
+| GalaxyPPG | 6.393 | 6.076 | 26.729 → 25.346 |
+| PPG-DaLiA | 12.135 | 12.155 | 32.784 → 32.921 |
+| WildPPG wrist | 18.117 | 15.025 | 48.825 → 49.646 |
 
-The improvement is dataset-dependent: DaLiA still favors Peak, and WildPPG's lower MAE accompanies a worse P95. These historically exposed cohorts are reassessments, not new confirmatory tests. The reported scores remain pre-v3: **no full v3 HR-model retraining or accuracy evaluation has been completed**, and the experimental v3 tools are outside this core.
+Gains are dataset-dependent: DaLiA still favors Peak, while WildPPG's lower MAE accompanies a higher P95. These historically inspected cohorts are reassessments, not new confirmatory tests. Full LOSO/repeated grouped benchmarking, complete model-faithful/normalization ablations, and all Week 1–8 figures and manuscript deliverables are not yet complete.
 
-## Experiment Core
+### Current Reproduction Commands
 
-```text
-ppg_project/
-|-- README.md
-|-- requirements.txt
-|-- requirements-external.txt
-|-- configs/
-`-- src/
-    |-- baseline/
-    |-- data/
-    |-- models/
-    |-- routing/
-    |-- utils/
-    `-- vendor/
-```
-
-The commands create local `data/processed/` and `experiments/` directories. Data and weights must be supplied separately.
-
-## Environment
-
-Tested with Python **3.13.9** on Windows using CPU execution. Dependencies are pinned; native WildPPG ECG reference extraction requires **WFDB 4.3.0**.
+Run from the repository root with raw data and the official checkpoints present. For this chain, use the checkpoint paths in `configs/conference_submission.json`. Use empty output directories for a fresh run; preserve completed local experiments. Install the external runtime dependencies, then export and fit the Galaxy source:
 
 ```bash
 python -m pip install -r requirements-external.txt
-```
-
-`requirements-external.txt` includes the core dependencies and WFDB. Use `requirements.txt` for Galaxy-only execution. For GPU execution, install the PyTorch wheel matching the CUDA environment.
-
-Git attributes preserve exact file bytes across platforms because provenance checks hash source and configuration files.
-
-## Raw Data
-
-Download [GalaxyPPG](https://doi.org/10.5281/zenodo.14635823), [PPG-DaLiA](https://archive.ics.uci.edu/static/public/495/ppg%2Bdalia.zip), and the native recordings from [WildPPG](https://github.com/eth-siplab/WildPPG). Preserve original filenames and place them as follows:
-
-```text
-data/raw/
-|-- GalaxyPPG/
-|   |-- Meta.csv
-|   `-- P02/
-|       |-- Event.csv
-|       |-- GalaxyWatch/
-|       |   |-- PPG.csv
-|       |   `-- ACC.csv
-|       `-- PolarH10/
-|           |-- IBI.csv
-|           `-- ECG.csv
-|-- PPG-DaLiA/
-|   |-- S1/S1.pkl
-|   `-- ...
-`-- WildPPG-wrist/
-    |-- WildPPG_Part_an0.mat
-    `-- ...
-```
-
-Galaxy requires all participants in `configs/galaxyppg_submission_split.json`; `P01` is excluded. DaLiA also accepts `S1.pkl` directly under its root and uses corrected released `rpeaks`. WildPPG native MAT input needs no CSV manifest. Only wrist green PPG and wrist ACC enter WildPPG inference; sternum ECG supplies its reference. External PPG retains native polarity.
-
-Extract the supplied combined archive into these raw-data layouts before running the export commands.
-
-## Model Weights
-
-Download the official [PulsePPG checkpoint](https://doi.org/10.5281/zenodo.17270930) and [PaPaGei checkpoint](https://zenodo.org/records/13983110). The frozen configuration uses:
-
-```text
-external/pulseppg/pulseppg/experiments/out/pulseppg/checkpoint_best.pkl
-external/papagei-foundation-model/weights/papagei_s.pt
-```
-
-These paths are declared in `configs/conference_submission.json`. Preserve them for the complete default reproduction chain; alternative placements require explicit configuration and a separate run.
-
-## Frozen v2 Reproduction
-
-Run commands from the repository root. The following chain assumes a fresh clone and empty output directories. Existing local research runs must be preserved: use a separate checkout with the default layout, or consistently change all source/output paths for a new run. An incomplete cache must not be spliced into a frozen run.
-
-The fixed split has 18 training and 5 test participants. Expert selection minimizes participant-balanced training OOF MAE. Probe tuning, scaling, imputation, and gate training stay inside participant-grouped training folds. Final predictions are frozen before evaluation joins references.
-
-```bash
 python -m src.data.export_processed --dataset-root data/raw/GalaxyPPG --split-config configs/galaxyppg_submission_split.json --reference-source ibi --min-hr-bpm 35 --max-hr-bpm 220 --output-root data/processed/corrected_v2
 python -m src.utils.run_submission --config configs/conference_submission.json --stage all
 python -m src.utils.run_submission --config configs/conference_submission.json --stage verify
 python -m src.utils.submission_statistics --results-root experiments/conference_submission_2026_11_01 --bootstrap-iterations 10000 --random-state 42
 ```
 
-The runner also supports `--stage prepare`, `train`, and `evaluate` in sequence. Reuse verifies input/artifact hashes; a changed protocol requires a new output directory. Outputs include OOF and final predictions, metrics, fitted models, selection records, and provenance. Statistics resample participants rather than overlapping windows. The historical `external_validation: requires_real_data` field in the frozen configuration predates the completed external studies; it is retained for source-protocol reproduction.
-
-## Real External Validation
-
-First complete the default Galaxy source run above. Export the native datasets into continuous participant arrays plus scalar window indices:
+Place DaLiA participant files under `data/raw/PPG-DaLiA/` and native `WildPPG_Part_*.mat` recordings under `data/raw/WildPPG-wrist/`. Compact exports store continuous participant arrays and scalar window indices. Run frozen transfer and separate within-dataset studies after completing the Galaxy source:
 
 ```bash
 python -m src.data.export_ppgdalia --dataset-root data/raw/PPG-DaLiA --output-root data/processed/external_2026_11_01/PPG-DaLiA_v2 --compact
@@ -134,13 +71,7 @@ python -m src.utils.run_external_research --manifest data/processed/external_202
 python -m src.utils.run_external_research --manifest data/processed/external_2026_11_01/WildPPG-wrist_v2/wildppg_wrist_ecg_w10_s2_beat_interval_instant_hr_median_manifest.json --units configs/wildppg_acc_units.json --output-root experiments/external_validation_2026_11_01/WildPPG-wrist --workers 2 --stage all
 ```
 
-Stages `prepare`, `transfer`, and `within` can run separately. The runner uses `experiments/conference_submission_2026_11_01` as its frozen source. Receipts verify manifests, archives, units, source models, implementation, and prepared artifacts before reuse.
-
-Transfer evaluates all 15 DaLiA and 16 WildPPG participants without target fitting. Separate within-dataset splits use `random.Random(42)` on sorted IDs: DaLiA holds out `S2,S3,S8`; WildPPG holds out `l38,n31,ngh,p9p`. Training uses outer 5 / inner 3 participant folds and linear/Ridge core probes. These studies are participant holdouts, not full-system LOSO.
-
-## Adaptive Router Development and Inference
-
-Complete the default Galaxy run and both external runs before the full reassessment:
+Train the adaptive router, reassess the frozen candidate, compare identical windows, or inspect the inference-only interface:
 
 ```bash
 python -m src.utils.run_router_development --config configs/router_development.json --stage all
@@ -149,16 +80,894 @@ python -m src.utils.compare_adaptive_candidate
 python -m src.utils.predict_adaptive_hr --help
 ```
 
-Development rebuilds expert selection and gate-training OOF inside each of five outer training folds, with three meta folds and nested Ridge tuning. It uses float64 downstream fitting and fixed RF experts for both encoders. The final five Galaxy participants and all external references are excluded from development. `--stage cv` and `--stage fit` separate development validation from final candidate serialization.
+The Week 2–4 and Week 7–8 commands later in this README document historical workflows and their saved artifacts. Use the current chain above for training-OOF expert/gate selection and frozen final evaluation. Guarded historical entrypoints require `--allow-legacy-retrospective` when explicitly reproducing those older analyses. New predictions, models, and result packages are generated locally. Historical reports remain unchanged and may mention the retired helper scripts; use the retained current commands above for new experiments.
 
-The evaluation freezes predictions for every dataset before loading references; the comparison requires equal complete physical-window key sets. The inference CLI consumes the fitted `adaptive_hr_system.joblib`, signal-only features, explicitly keyed embedding metadata, and two embedding matrices. It rejects target/error columns and recognized v3 caches. It does not fit or compute performance metrics.
+## Corrected Flow
 
-## Scientific Limits
+The corrected GalaxyPPG flow is anchored by:
 
-Current limitations remain material:
+- canonical schema: `src/data/canonical.py`
+- label generation: `src/data/labels.py`
+- experiment modes: `configs/experiment_modes.json`
+- protocol record: `configs/submission_protocol.json`
+- corrected processed manifest: `data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json`
+- raw/inverted PPG visual check: `notebooks/galaxyppg_ppg_inversion_check.ipynb`
+- week deliverable summary: `weekplan/week1.md`
 
-- Galaxy IBI timestamp ownership is unresolved. Historical logger/exporter evidence is required before shifting interval timestamps or claiming corrected new labels.
-- WildPPG MAT acceleration is assumed to be in g, with a predeclared factor of 9.80665. Motion-dependent results are conditional on this unverified scale; PPG-only experts and quality-only gates are independent of ACC scaling.
-- WildPPG references use pinned, untuned XQRS ECG detection and retain automatic-reference uncertainty. DaLiA uses corrected released R peaks; its synchronized PKL acceleration is verified in g, distinct from raw E4 CSV units of 1/64 g.
-- DaLiA is external to this project's downstream fitting but appeared in upstream encoder evaluation/model selection. Small holdouts and historically inspected cohorts limit claims of independent generalization.
-- The reported accuracy remains pre-v3. Independent confirmation, v3 retraining, and strict model-faithful comparisons are unfinished.
+`reports/`, root-level `week1.md`, `Current.md`, and local `.docx` planning files are personal review artifacts and are not required for the reproducible pipeline.
+
+## Repository Layout
+
+```text
+ppg_project/
+|-- README.md
+|-- requirements.txt
+|-- configs/
+|   |-- experiment_modes.json
+|   |-- galaxyppg_submission_split.json
+|   `-- submission_protocol.json
+|-- src/
+|   |-- baseline/
+|   |-- data/
+|   |-- models/
+|   |-- regression/
+|   |-- utils/
+|   `-- vendor/
+|       |-- UPSTREAM.md
+|       |-- pulseppg_resnet1d.py
+|       |-- papagei_resnet.py
+|       `-- resnet1d_shared.py
+|-- data/
+|   |-- raw/
+|   |   `-- GalaxyPPG/
+|   |-- processed/
+|   `-- summary/
+|-- external/
+|   `-- .gitkeep
+|-- notebooks/
+|-- weekplan/
+`-- experiments/
+```
+
+`external/` is intentionally kept almost empty in version control. It is the local checkpoint root where users place downloaded model weights at the documented paths.
+
+## Environment
+
+Tested environment:
+
+- Python `3.13.9`
+- Windows
+- CPU execution
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+For GPU execution, replace the `torch` wheel with the one that matches your CUDA environment.
+
+## Raw Data
+
+The raw dataset is not bundled in this repository.
+
+Use the official GalaxyPPG sources:
+
+- official dataset archive: `https://doi.org/10.5281/zenodo.14635823`
+- supplementary code repository: `https://github.com/Kaist-ICLab/GalaxyPPG-Supplementary-Code`
+- Galaxy Watch logger repository: `https://github.com/Kaist-ICLab/GalaxyPPG-Logger`
+
+After download, extract the dataset so that the repository-local path is:
+
+```text
+data/raw/GalaxyPPG/
+```
+
+The preprocessing code expects `Meta.csv` directly inside `data/raw/GalaxyPPG/`.
+
+Expected participant structure:
+
+```text
+data/raw/GalaxyPPG/
+|-- Meta.csv
+|-- P02/
+|   |-- Event.csv
+|   |-- GalaxyWatch/
+|   |   |-- PPG.csv
+|   |   `-- ACC.csv
+|   `-- PolarH10/
+|       |-- ECG.csv
+|       |-- HR.csv
+|       `-- IBI.csv
+|-- P03/
+|   |-- Event.csv
+|   |-- GalaxyWatch/
+|   |   |-- PPG.csv
+|   |   `-- ACC.csv
+|   `-- PolarH10/
+|       |-- ECG.csv
+|       |-- HR.csv
+|       `-- IBI.csv
+`-- ...
+```
+
+Notes:
+
+- `GalaxyWatch/PPG.csv` is required as model input.
+- `GalaxyWatch/ACC.csv` is loaded into the canonical accelerometer table when available.
+- `PolarH10/IBI.csv` is the default corrected reference source.
+- `PolarH10/ECG.csv` is supported by detecting R peaks inside each window and deriving RR intervals.
+- `PolarH10/HR.csv` remains available for legacy `provided_hr_samples` labels.
+- `Event.csv` is used for `ENTER/EXIT` session boundaries.
+- `P01` is excluded from the fixed split because the official raw release does not provide usable Galaxy Watch PPG plus event annotations for this project.
+
+## Model Weights
+
+Only the pretrained checkpoint files are required. No extra upstream model-code checkout is needed at runtime.
+
+### PulsePPG
+
+- source: official PulsePPG Zenodo record `https://doi.org/10.5281/zenodo.17270930`
+- expected filename: `checkpoint_best.pkl`
+- recommended placement:
+
+```text
+external/pulseppg/checkpoint_best.pkl
+```
+
+Backward-compatible legacy placement is also supported:
+
+```text
+external/pulseppg/pulseppg/experiments/out/pulseppg/checkpoint_best.pkl
+```
+
+### PaPaGei
+
+- source: official PaPaGei Zenodo record `https://zenodo.org/records/13983110`
+- expected filename: `papagei_s.pt`
+- expected placement:
+
+```text
+external/papagei-foundation-model/weights/papagei_s.pt
+```
+
+## Vendored Runtime Code
+
+No extra external model repository checkout is required for feature extraction.
+
+The minimal checkpoint-compatible runtime code is vendored in:
+
+- `src/vendor/pulseppg_resnet1d.py`
+- `src/vendor/papagei_resnet.py`
+- `src/vendor/resnet1d_shared.py`
+
+Upstream provenance is pinned in `src/vendor/UPSTREAM.md`.
+
+## Fixed Split
+
+The fixed participant split is defined in:
+
+```text
+configs/galaxyppg_submission_split.json
+```
+
+It records:
+
+- train participants
+- held-out test participants
+- deterministic participant-level validation folds
+- random seed `42`
+
+Training uses the saved validation-fold assignments instead of recomputing them ad hoc.
+
+## Canonical Schema
+
+The canonical schema is defined in `src/data/canonical.py` as `canonical_ppg_v1`.
+
+Canonical PPG fields include:
+
+```text
+participant_id, timestamp_ms, ppg, ppg_raw, ppg_inverted,
+ppg_canonical_source, session_id, session_name, activity_label,
+dataset, sensor
+```
+
+Canonical accelerometer fields include:
+
+```text
+participant_id, timestamp_ms, acc_x, acc_y, acc_z,
+session_id, session_name, activity_label, dataset, sensor
+```
+
+Canonical reference fields include:
+
+```text
+participant_id, timestamp_ms, ecg_uv, rr_interval_ms, hr_bpm,
+reference_source, session_id, session_name, activity_label,
+dataset, sensor
+```
+
+Dataset-specific corrections happen at the loader boundary. Downstream windowing, feature extraction, and regression consume canonical fields so that GalaxyPPG, PPG-DaLiA, and WildPPG can later share the same contracts.
+
+## Loader-Level PPG Inversion
+
+Galaxy Watch PPG inversion is explicit and mandatory in `src/data/loader.py`.
+
+The raw value from `GalaxyWatch/PPG.csv` is preserved as:
+
+```text
+ppg_raw
+```
+
+The canonical downstream signal is:
+
+```text
+ppg = -ppg_raw
+```
+
+Each row records:
+
+```text
+ppg_inverted = True
+ppg_canonical_source = "GalaxyWatch/PPG.csv:ppg_raw_inverted"
+```
+
+The inversion is intentionally not hidden in model-specific preprocessing.
+
+## Label Generation
+
+The shared target logic is implemented in `src/data/labels.py`.
+
+Corrected default:
+
+```text
+window_seconds = 10
+stride_seconds = 2
+label_method = beat_interval_instant_hr
+label_aggregation = median
+min_valid_beats = 2
+```
+
+The target rule is:
+
+```text
+instant_hr_bpm = 60000 / rr_interval_ms
+label_hr_bpm = median(instant_hr_bpm inside the 10-second window)
+```
+
+For IBI references, `rr_interval_ms` comes from `PolarH10/IBI.csv`.
+
+For ECG references, likely R peaks are detected inside each 10-second window, adjacent R-R intervals are converted to instantaneous HR, and the same median target rule is used.
+
+Windows are dropped when they fail either condition:
+
+- PPG coverage is below `0.8`
+- fewer than `2` valid beat intervals are available
+
+Legacy HR-sample labels are still available through `provided_hr_samples`, but the corrected GalaxyPPG export uses `beat_interval_instant_hr`.
+
+## Preprocessing Modes
+
+Experiment modes are defined in:
+
+```text
+configs/experiment_modes.json
+```
+
+### Harmonized
+
+Use `harmonized` for controlled comparisons.
+
+It keeps windows, labels, split, resampling policy, band-pass filtering, and per-window z-score normalization consistent across feature extractors.
+
+### Model Faithful
+
+Use `model_faithful` for model-specific assumptions while keeping the corrected windows and labels fixed.
+
+PulsePPG normalization options:
+
+- `none`
+- `per_window_zscore`
+- `person_specific_zscore`
+- `causal_running_zscore`
+
+PaPaGei is evaluated as frozen embeddings with downstream linear or ridge probes.
+
+Feature manifests record:
+
+- `experiment_mode`
+- preprocessing mode
+- target sampling rate
+- band-pass setting
+- normalization strategy
+- operation order
+
+Regression metrics propagate this preprocessing metadata.
+
+## Processed Data Export
+
+Build the corrected processed cache:
+
+```bash
+python -m src.data.export_processed --dataset-root data/raw/GalaxyPPG --split-config configs/galaxyppg_submission_split.json
+```
+
+Expected outputs:
+
+```text
+data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json
+data/processed/windows/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_windows.jsonl.gz
+data/processed/labels/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_labels.csv
+```
+
+The corrected manifest records:
+
+- canonical schema version
+- dataset root
+- reference source
+- PPG inversion status and canonical source
+- window length and stride
+- label method, aggregation, formula, ECG/IBI construction, and drop rule
+- train/test participants
+- validation-fold assignments
+- processed artifact paths
+
+Current corrected GalaxyPPG export:
+
+```text
+artifact_name = galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median
+num_windows = 35135
+num_train_windows = 27504
+num_test_windows = 7631
+num_participants = 23
+```
+
+## Baseline Commands
+
+Run a baseline from the corrected processed cache:
+
+```bash
+python -m src.baseline.run_baseline --processed-manifest data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json --split-config configs/galaxyppg_submission_split.json --method peak --output-dir experiments/reproduced_corrected_2026-04-24/baseline_peak
+```
+
+Run from raw data:
+
+```bash
+python -m src.baseline.run_baseline --dataset-root data/raw/GalaxyPPG --split-config configs/galaxyppg_submission_split.json --method peak --output-dir experiments/reproduced_corrected_2026-04-24/baseline_peak_from_raw
+```
+
+Supported baseline methods:
+
+- `peak`
+- `spectral`
+
+## Feature Extraction
+
+### PulsePPG Harmonized
+
+```bash
+python -m src.models.pulseppg_feature --manifest-path data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json --experiment-config configs/experiment_modes.json --experiment-mode harmonized --output-dir experiments/pulseppg_results/2026-04-24/full_harmonized --batch-size 128 --device cpu
+```
+
+### PulsePPG Model Faithful
+
+```bash
+python -m src.models.pulseppg_feature --manifest-path data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json --experiment-config configs/experiment_modes.json --experiment-mode model_faithful --normalization causal_running_zscore --output-dir experiments/pulseppg_results/2026-04-24/full_model_faithful_causal --batch-size 128 --device cpu
+```
+
+### PaPaGei Harmonized
+
+```bash
+python -m src.models.papagei_feature --manifest-path data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json --experiment-config configs/experiment_modes.json --experiment-mode harmonized --output-dir experiments/papagei_results/2026-04-24/full_harmonized --batch-size 128 --device cpu
+```
+
+### PaPaGei Model Faithful
+
+```bash
+python -m src.models.papagei_feature --manifest-path data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json --experiment-config configs/experiment_modes.json --experiment-mode model_faithful --output-dir experiments/papagei_results/2026-04-24/full_model_faithful --batch-size 128 --device cpu
+```
+
+Expected feature outputs:
+
+```text
+<output-dir>/<model>_features.npy
+<output-dir>/<model>_metadata.csv
+<output-dir>/<model>_manifest.json
+```
+
+## Regression
+
+Example: PulsePPG + random forest
+
+```bash
+python -m src.regression.train_regressor --feature-manifest experiments/pulseppg_results/2026-04-24/full_harmonized/pulseppg_manifest.json --regressor random_forest --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/pulseppg_results/2026-04-24/regression_random_forest
+```
+
+Example: PaPaGei + ridge
+
+```bash
+python -m src.regression.train_regressor --feature-manifest experiments/papagei_results/2026-04-24/full_harmonized/papagei_manifest.json --regressor ridge --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/papagei_results/2026-04-24/regression_ridge
+```
+
+Supported regressors:
+
+- `linear`
+- `ridge`
+- `random_forest`
+- `gradient_boosting`
+
+Regression metrics include feature preprocessing metadata when it is available in the feature manifest.
+
+## Plotting
+
+Generate evaluation plots for a saved regression run:
+
+```bash
+python -m src.regression.plot_regression_results --result-dir experiments/pulseppg_results/2026-04-24/regression_random_forest
+```
+
+Generate evaluation plots for a saved baseline run:
+
+```bash
+python -m src.baseline.plot_baseline_results --result-dir experiments/reproduced_corrected_2026-04-24/baseline_peak
+```
+
+## Week 2 Corrected GalaxyPPG Benchmark
+
+Week 2 outputs are stored under:
+
+```text
+experiments/week2_galaxyppg_corrected_2026-05-01/
+```
+
+The Week 2 configs are:
+
+```text
+configs/week2_galaxyppg_harmonized.json
+configs/week2_galaxyppg_model_faithful.json
+configs/week2_galaxyppg_inversion_ablation.json
+```
+
+Run the corrected GalaxyPPG harmonized classical baselines:
+
+```bash
+python -m src.baseline.run_baseline --processed-manifest data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json --split-config configs/galaxyppg_submission_split.json --method peak --ppg-source canonical --output-dir experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/baseline_peak
+python -m src.baseline.run_baseline --processed-manifest data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json --split-config configs/galaxyppg_submission_split.json --method spectral --ppg-source canonical --output-dir experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/baseline_spectral
+```
+
+Run the inversion ablation for classical baselines:
+
+```bash
+python -m src.baseline.run_baseline --processed-manifest data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json --split-config configs/galaxyppg_submission_split.json --method peak --ppg-source raw --output-dir experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/baseline_peak_raw
+python -m src.baseline.run_baseline --processed-manifest data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json --split-config configs/galaxyppg_submission_split.json --method spectral --ppg-source raw --output-dir experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/baseline_spectral_raw
+```
+
+Extract frozen embeddings for harmonized foundation-model runs:
+
+```bash
+python -m src.models.pulseppg_feature --manifest-path data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json --experiment-config configs/experiment_modes.json --experiment-mode harmonized --output-dir experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_features --batch-size 256 --device cpu
+python -m src.models.papagei_feature --manifest-path data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json --experiment-config configs/experiment_modes.json --experiment-mode harmonized --output-dir experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/papagei_features --batch-size 128 --device cpu
+```
+
+Train probes and practical upper-bound regressors from a saved feature manifest:
+
+```bash
+python -m src.regression.train_regressor --feature-manifest experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_features/pulseppg_manifest.json --regressor ridge --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_ridge
+python -m src.regression.train_regressor --feature-manifest experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_features/pulseppg_manifest.json --regressor random_forest --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_random_forest
+```
+
+For model-faithful PulsePPG, rerun feature extraction with each normalization variant:
+
+```bash
+python -m src.models.pulseppg_feature --manifest-path data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json --experiment-config configs/experiment_modes.json --experiment-mode model_faithful --normalization causal_running_zscore --output-dir experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_features_causal_running_zscore --batch-size 256 --device cpu
+```
+
+For foundation-model inversion ablations, extract raw non-inverted features with `--ppg-source raw` and train the same probe:
+
+```bash
+python -m src.models.pulseppg_feature --manifest-path data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json --experiment-config configs/experiment_modes.json --experiment-mode harmonized --ppg-source raw --output-dir experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/pulseppg_features_raw --batch-size 256 --device cpu
+python -m src.regression.train_regressor --feature-manifest experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/pulseppg_features_raw/pulseppg_manifest.json --regressor ridge --random-state 42 --split-config configs/galaxyppg_submission_split.json --output-dir experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/pulseppg_ridge_raw
+```
+
+After all selected runs are present, generate standardized prediction files, metrics, tables, figures, and the Week 2 memo:
+
+```bash
+python -m src.utils.build_week2_artifacts --search-root experiments/week2_galaxyppg_corrected_2026-05-01/runs --output-root experiments/week2_galaxyppg_corrected_2026-05-01 --tag-name week2-galaxyppg-corrected-2026-05-01
+```
+
+Expected Week 2 summary artifacts:
+
+```text
+experiments/week2_galaxyppg_corrected_2026-05-01/predictions/week2_all_standardized_predictions.csv
+experiments/week2_galaxyppg_corrected_2026-05-01/metrics/overall_metrics.csv
+experiments/week2_galaxyppg_corrected_2026-05-01/metrics/participant_level_metrics.csv
+experiments/week2_galaxyppg_corrected_2026-05-01/metrics/activity_level_metrics.csv
+experiments/week2_galaxyppg_corrected_2026-05-01/tables/main_benchmark_table.csv
+experiments/week2_galaxyppg_corrected_2026-05-01/tables/inversion_ablation_table.csv
+experiments/week2_galaxyppg_corrected_2026-05-01/week2_memo.md
+```
+
+Each completed run folder under `experiments/week2_galaxyppg_corrected_2026-05-01/runs/` also carries fixed reproducibility filenames:
+
+```text
+predictions.csv
+metrics.json
+run_config.json
+run_log.json
+```
+
+The original method-prefixed files are retained beside these fixed filenames. PulsePPG and PaPaGei embedding bundles are stored in their feature folders as:
+
+```text
+<model>_features.npy
+<model>_metadata.csv
+<model>_manifest.json
+run_config.json
+```
+
+The Week 2 embedding manifests must point to:
+
+```text
+data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json
+```
+
+Do not mix these corrected IBI/ECG-derived results with legacy `galaxyppg_hr_w10_s2_median` feature caches.
+
+## Week 3 Regime Analysis and Oracle Routing
+
+Week 3 uses the corrected GalaxyPPG Week 2 predictions to test whether estimator dominance is regime-dependent before training any deployable router. The analysis pairs a selected classical expert with a selected foundation-model expert on shared valid windows, computes per-window error gaps, adds activity/participant/HR-range/motion/PPG-quality regime features, and reports an oracle router upper bound.
+
+Build the default Week 3 artifact set:
+
+```bash
+python -m src.utils.build_week3_artifacts --allow-legacy-retrospective --week2-root experiments/week2_galaxyppg_corrected_2026-05-01 --output-root experiments/week3_galaxyppg_regime_oracle_2026-05-13
+```
+
+The default selection chooses the lowest-MAE inverted classical run and the lowest-MAE inverted foundation-model run from the Week 2 prediction table. You can override the expert choice, for example:
+
+```bash
+python -m src.utils.build_week3_artifacts --allow-legacy-retrospective --foundation-model pulseppg --foundation-regressor ridge --foundation-preprocessing-mode harmonized
+```
+
+Expected Week 3 artifacts:
+
+```text
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/predictions.csv
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/metrics.json
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/run_config.json
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/run_log.json
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/predictions/week3_window_regime_expert_errors.csv
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/predictions/week3_oracle_router_predictions.csv
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/tables/selected_expert_oracle_summary.csv
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/tables/oracle_all_pairs_table.csv
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/tables/regime_by_activity.csv
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/tables/regime_by_participant.csv
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/tables/regime_by_hr_range.csv
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/tables/regime_by_motion_intensity.csv
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/tables/regime_by_ppg_quality.csv
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/tables/regime_by_motion_and_quality.csv
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/figures/oracle_vs_selected_experts.png
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/figures/winner_rate_by_activity.png
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/figures/motion_quality_error_gap_heatmap.png
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/figures/window_error_gap_distribution.png
+experiments/week3_galaxyppg_regime_oracle_2026-05-13/week3_regime_analysis.md
+```
+
+## Week 4 Lightweight Routing
+
+Week 4 trains the first lightweight motion- and quality-aware router on GalaxyPPG. It uses the Week 3 paired expert predictions and inference-time regime features, then evaluates participant-level out-of-fold gates with leave-one-participant-out routing predictions.
+
+The routed system intentionally remains simple and interpretable:
+
+- `hard_gate`: logistic gate chooses either the classical expert or foundation-model expert.
+- `soft_gate`: logistic gate probability is used as the foundation-model weight, and the two expert predictions are averaged.
+- feature ablations: `motion_only`, `quality_only`, and `motion_quality`.
+
+Build the Week 4 artifact set:
+
+```bash
+python -m src.utils.build_week4_artifacts --week3-root experiments/week3_galaxyppg_regime_oracle_2026-05-13 --output-root experiments/week4_galaxyppg_lightweight_router_2026-05-13
+```
+
+Routing feature groups:
+
+```text
+motion_only:
+  acc_norm_mean, acc_norm_std, acc_dominant_frequency_hz,
+  acc_cadence_band_power_fraction
+
+quality_only:
+  ppg_amplitude_range, ppg_clipping_rate, ppg_flatline_rate,
+  ppg_autocorr_peak_strength, ppg_spectral_entropy,
+  ppg_spectral_peak_sharpness, beat_count_consistency,
+  peak_spectral_disagreement_bpm
+
+motion_quality:
+  all motion and quality features
+```
+
+Expected Week 4 artifacts:
+
+```text
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/predictions.csv
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/metrics.json
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/run_config.json
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/run_log.json
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/features/week4_motion_quality_features.csv
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/predictions/week4_routed_predictions.csv
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/tables/routing_summary.csv
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/tables/gate_fold_summary.csv
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/tables/router_fold_assignments.csv
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/tables/gate_feature_coefficients.csv
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/tables/participant_level_routing_metrics.csv
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/tables/activity_level_routing_metrics.csv
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/router_model_manifest.json
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/*.joblib
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/figures/hard_soft_router_mae.png
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/figures/best_router_error_cdf.png
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/figures/combined_gate_feature_coefficients.png
+experiments/week4_galaxyppg_lightweight_router_2026-05-13/week4_lightweight_router.md
+```
+
+After Week 2-4 outputs exist, normalize the package and verify corrected embedding provenance:
+
+```bash
+python -m src.utils.package_reproducibility_artifacts --week2-root experiments/week2_galaxyppg_corrected_2026-05-01 --week3-root experiments/week3_galaxyppg_regime_oracle_2026-05-13 --week4-root experiments/week4_galaxyppg_lightweight_router_2026-05-13
+```
+
+This writes:
+
+```text
+experiments/reproducibility_manifest.json
+experiments/reproducibility_manifest.md
+experiments/week2_galaxyppg_corrected_2026-05-01/run_manifest.csv
+experiments/week2_galaxyppg_corrected_2026-05-01/embedding_manifest.csv
+```
+
+## Week 5 PPG-DaLiA External Validation
+
+Week 5 starts the external-validation track by mapping PPG-DaLiA into the same canonical schema and label-generation rule used for GalaxyPPG.
+
+Place PPG-DaLiA raw participant pickle files under:
+
+```text
+data/raw/PPG-DaLiA/
+```
+
+Supported layouts are documented in:
+
+```text
+data/raw/PPG-DaLiA/README.md
+```
+
+Export PPG-DaLiA wrist windows and ECG/R-peak-derived labels:
+
+```bash
+python -m src.data.export_ppgdalia --dataset-root data/raw/PPG-DaLiA --output-root data/processed
+```
+
+This produces a processed manifest named like:
+
+```text
+data/processed/ppg_dalia_ecg_w10_s2_beat_interval_instant_hr_median_manifest.json
+```
+
+Run PPG-DaLiA within-dataset baselines from the processed manifest:
+
+```bash
+python -m src.baseline.run_baseline --processed-manifest data/processed/ppg_dalia_ecg_w10_s2_beat_interval_instant_hr_median_manifest.json --method peak --output-dir experiments/week5_ppgdalia_external_validation/runs/baseline_peak
+python -m src.baseline.run_baseline --processed-manifest data/processed/ppg_dalia_ecg_w10_s2_beat_interval_instant_hr_median_manifest.json --method spectral --output-dir experiments/week5_ppgdalia_external_validation/runs/baseline_spectral
+```
+
+Extract PPG-DaLiA PulsePPG and PaPaGei embeddings using the corrected external manifest:
+
+```bash
+python -m src.models.pulseppg_feature --manifest-path data/processed/ppg_dalia_ecg_w10_s2_beat_interval_instant_hr_median_manifest.json --experiment-config configs/experiment_modes.json --experiment-mode harmonized --output-dir experiments/week5_ppgdalia_external_validation/runs/pulseppg_features --batch-size 256 --device cpu
+python -m src.models.papagei_feature --manifest-path data/processed/ppg_dalia_ecg_w10_s2_beat_interval_instant_hr_median_manifest.json --experiment-config configs/experiment_modes.json --experiment-mode harmonized --output-dir experiments/week5_ppgdalia_external_validation/runs/papagei_features --batch-size 128 --device cpu
+```
+
+Train within-dataset probes:
+
+```bash
+python -m src.regression.train_regressor --feature-manifest experiments/week5_ppgdalia_external_validation/runs/pulseppg_features/pulseppg_manifest.json --regressor linear --random-state 42 --output-dir experiments/week5_ppgdalia_external_validation/runs/pulseppg_linear
+python -m src.regression.train_regressor --feature-manifest experiments/week5_ppgdalia_external_validation/runs/pulseppg_features/pulseppg_manifest.json --regressor ridge --random-state 42 --output-dir experiments/week5_ppgdalia_external_validation/runs/pulseppg_ridge
+python -m src.regression.train_regressor --feature-manifest experiments/week5_ppgdalia_external_validation/runs/papagei_features/papagei_manifest.json --regressor linear --random-state 42 --output-dir experiments/week5_ppgdalia_external_validation/runs/papagei_linear
+python -m src.regression.train_regressor --feature-manifest experiments/week5_ppgdalia_external_validation/runs/papagei_features/papagei_manifest.json --regressor ridge --random-state 42 --output-dir experiments/week5_ppgdalia_external_validation/runs/papagei_ridge
+```
+
+The current real-data transfer and within-dataset result tables are generated by `src.utils.run_external_research` using the commands in Current Progress above.
+
+The Week 5 external-validation folder should follow the same run-folder rule:
+
+```text
+predictions.csv
+metrics.json
+run_config.json
+run_log.json
+```
+
+## Week 6 WildPPG Wrist External Validation
+
+Native `WildPPG_Part_*.mat` recordings are now supported directly under `data/raw/WildPPG-wrist/`; use the current commands above. The configurable CSV manifest below remains available for legacy CSV layouts. Put those raw files under:
+
+```text
+data/raw/WildPPG-wrist/
+```
+
+Create:
+
+```text
+data/raw/WildPPG-wrist/wildppg_wrist_manifest.csv
+```
+
+The required and optional columns are documented in:
+
+```text
+data/raw/WildPPG-wrist/README.md
+```
+
+Export WildPPG wrist windows and ECG/RR-derived labels:
+
+```bash
+python -m src.data.export_wildppg_wrist --dataset-root data/raw/WildPPG-wrist --output-root data/processed
+```
+
+This produces a processed manifest named like:
+
+```text
+data/processed/wildppg_wrist_ecg_w10_s2_beat_interval_instant_hr_median_manifest.json
+```
+
+Run within-dataset baselines:
+
+```bash
+python -m src.baseline.run_baseline --processed-manifest data/processed/wildppg_wrist_ecg_w10_s2_beat_interval_instant_hr_median_manifest.json --method peak --output-dir experiments/week6_wildppg_wrist_external_validation/runs/baseline_peak
+python -m src.baseline.run_baseline --processed-manifest data/processed/wildppg_wrist_ecg_w10_s2_beat_interval_instant_hr_median_manifest.json --method spectral --output-dir experiments/week6_wildppg_wrist_external_validation/runs/baseline_spectral
+```
+
+Extract embeddings and train probes with the same commands used for Week 5, replacing the manifest path and output root with the WildPPG paths.
+
+Use the current external-validation commands above to generate each dataset's `transfer/summary.csv`, `within_dataset/summary.csv`, paired predictions, and participant metrics.
+
+## Week 7 Final Statistics
+
+Build participant-level paired statistics for the Week 4 routed system versus each participant's best single expert:
+
+```bash
+python -m src.utils.build_week7_statistics --week4-root experiments/week4_galaxyppg_lightweight_router_2026-05-13 --output-root experiments/week7_final_statistics --router-feature-set motion_quality --router-type hard_gate
+```
+
+Expected outputs:
+
+```text
+experiments/week7_final_statistics/participant_level_router_comparison.csv
+experiments/week7_final_statistics/paired_significance_tests.csv
+experiments/week7_final_statistics/paired_significance_tests.json
+experiments/week7_final_statistics/week7_statistics.md
+```
+
+Statistics are computed at participant level. Positive deltas mean the router improved over the participant's best single expert.
+
+## Week 8 Final Frozen Package
+
+Freeze the final artifact set for paper drafting and reproducibility review:
+
+```bash
+python -m src.utils.freeze_final_results --week2-root experiments/week2_galaxyppg_corrected_2026-05-01 --week3-root experiments/week3_galaxyppg_regime_oracle_2026-05-13 --week4-root experiments/week4_galaxyppg_lightweight_router_2026-05-13 --week7-root experiments/week7_final_statistics
+```
+
+Expected output:
+
+```text
+experiments/final_frozen_results_<date>/
+```
+
+The frozen package contains copied Week 2 tables/metrics/predictions, Week 3 oracle-routing artifacts, Week 4 router features/predictions/metrics/models, Week 7 statistics, a `final_frozen_manifest.json`, and a package README with reproduction commands.
+
+Generated result packages, prediction CSVs, embedding arrays, trained `.joblib` models, figures, and final frozen result directories are intentionally gitignored. Regenerate them locally or distribute them through release/artifact storage rather than committing them directly.
+
+## Full Reproduction Order
+
+1. Install dependencies.
+
+```bash
+pip install -r requirements.txt
+```
+
+2. Download and extract `GalaxyPPG` to `data/raw/GalaxyPPG/`.
+
+3. Place official checkpoints:
+
+```text
+external/pulseppg/checkpoint_best.pkl
+external/papagei-foundation-model/weights/papagei_s.pt
+```
+
+4. Export corrected processed windows and labels.
+
+```bash
+python -m src.data.export_processed --dataset-root data/raw/GalaxyPPG --split-config configs/galaxyppg_submission_split.json
+```
+
+5. Inspect raw versus inverted PPG.
+
+```text
+notebooks/galaxyppg_ppg_inversion_check.ipynb
+```
+
+6. Rebuild the Week 2 corrected benchmark package from completed runs.
+
+```bash
+python -m src.utils.build_week2_artifacts --search-root experiments/week2_galaxyppg_corrected_2026-05-01/runs --output-root experiments/week2_galaxyppg_corrected_2026-05-01 --tag-name week2-galaxyppg-corrected-2026-05-01
+```
+
+7. Rebuild the Week 3 oracle-routing artifacts from Week 2 predictions.
+
+```bash
+python -m src.utils.build_week3_artifacts --allow-legacy-retrospective --week2-root experiments/week2_galaxyppg_corrected_2026-05-01 --output-root experiments/week3_galaxyppg_regime_oracle_2026-05-13
+```
+
+8. Rebuild the Week 4 router artifacts, including feature CSVs, fold assignments, and trained fold models.
+
+```bash
+python -m src.utils.build_week4_artifacts --week3-root experiments/week3_galaxyppg_regime_oracle_2026-05-13 --output-root experiments/week4_galaxyppg_lightweight_router_2026-05-13
+```
+
+9. Backfill fixed filenames and write the package-level reproducibility manifest.
+
+```bash
+python -m src.utils.package_reproducibility_artifacts --week2-root experiments/week2_galaxyppg_corrected_2026-05-01 --week3-root experiments/week3_galaxyppg_regime_oracle_2026-05-13 --week4-root experiments/week4_galaxyppg_lightweight_router_2026-05-13
+```
+
+10. For external validation, export PPG-DaLiA and WildPPG wrist processed manifests after placing the raw data.
+
+```bash
+python -m src.data.export_ppgdalia --dataset-root data/raw/PPG-DaLiA --output-root data/processed
+python -m src.data.export_wildppg_wrist --dataset-root data/raw/WildPPG-wrist --output-root data/processed
+```
+
+11. Build participant-level Week 7 statistics and freeze the final package.
+
+```bash
+python -m src.utils.build_week7_statistics --week4-root experiments/week4_galaxyppg_lightweight_router_2026-05-13 --output-root experiments/week7_final_statistics --router-feature-set motion_quality --router-type hard_gate
+python -m src.utils.freeze_final_results --week2-root experiments/week2_galaxyppg_corrected_2026-05-01 --week3-root experiments/week3_galaxyppg_regime_oracle_2026-05-13 --week4-root experiments/week4_galaxyppg_lightweight_router_2026-05-13 --week7-root experiments/week7_final_statistics
+```
+
+## Verification Performed
+
+The corrected flow was smoke-tested with:
+
+```text
+python -m compileall src
+```
+
+Additional checks:
+
+- JSON parse check for `configs/submission_protocol.json`
+- JSON parse check for `configs/experiment_modes.json`
+- JSON parse check for the corrected processed manifest
+- notebook JSON parse check
+- default manifest load check: `35135` windows
+- first P02 raw-loader check: `ppg = -ppg_raw`
+- P02 IBI smoke test: `1507` windows, first window `valid_beat_count=14`
+- P02 ECG smoke test: `1507` windows, first window `valid_beat_count=16`
+
+## Legacy Results
+
+Older experiment folders and some historical feature caches may still correspond to the former `galaxyppg_hr_w10_s2_median` workflow. Those results should be treated as legacy HR-sample-label results and not mixed with corrected `galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median` metrics.
+
+For corrected reruns, use the manifest path:
+
+```text
+data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json
+```
+
+## Requirements for Reproducible Reruns
+
+You should not need to edit source code if:
+
+- the raw dataset is placed under `data/raw/GalaxyPPG/`
+- the official checkpoints are placed at the documented paths
+- you use the documented CLI arguments for paths and experiment modes
+
+If you change dataset paths or checkpoint paths, pass them through CLI arguments instead of editing source files.

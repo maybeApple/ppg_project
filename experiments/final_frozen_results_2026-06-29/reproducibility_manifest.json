@@ -1,0 +1,391 @@
+{
+  "schema_version": "reproducibility_package_v1",
+  "corrected_processed_manifest": "data/processed/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json",
+  "week2": {
+    "root": "experiments/week2_galaxyppg_corrected_2026-05-01",
+    "runs": [
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/baseline_peak",
+        "run_id": "harmonized/baseline_peak",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/baseline_peak/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/baseline_peak/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/baseline_peak/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/baseline_peak/run_log.json",
+        "mae": 7.865751282172412,
+        "rmse": 16.10516715149217
+      },
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/baseline_spectral",
+        "run_id": "harmonized/baseline_spectral",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/baseline_spectral/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/baseline_spectral/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/baseline_spectral/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/baseline_spectral/run_log.json",
+        "mae": 18.60326496755225,
+        "rmse": 29.58345792820731
+      },
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/papagei_linear",
+        "run_id": "harmonized/papagei_linear",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/papagei_linear/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/papagei_linear/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/papagei_linear/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/papagei_linear/run_log.json",
+        "mae": 11.528971521817729,
+        "rmse": 16.78046551966988
+      },
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/papagei_random_forest",
+        "run_id": "harmonized/papagei_random_forest",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/papagei_random_forest/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/papagei_random_forest/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/papagei_random_forest/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/papagei_random_forest/run_log.json",
+        "mae": 11.470994376317266,
+        "rmse": 16.4607430678308
+      },
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/papagei_ridge",
+        "run_id": "harmonized/papagei_ridge",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/papagei_ridge/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/papagei_ridge/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/papagei_ridge/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/papagei_ridge/run_log.json",
+        "mae": 11.462122270495025,
+        "rmse": 16.568073698868496
+      },
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_linear",
+        "run_id": "harmonized/pulseppg_linear",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_linear/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_linear/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_linear/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_linear/run_log.json",
+        "mae": 8.139044949627655,
+        "rmse": 12.569079290997497
+      },
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_random_forest",
+        "run_id": "harmonized/pulseppg_random_forest",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_random_forest/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_random_forest/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_random_forest/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_random_forest/run_log.json",
+        "mae": 6.817562368739363,
+        "rmse": 11.343081441215153
+      },
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_ridge",
+        "run_id": "harmonized/pulseppg_ridge",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_ridge/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_ridge/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_ridge/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_ridge/run_log.json",
+        "mae": 8.050784000037083,
+        "rmse": 12.497685354886126
+      },
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/baseline_peak_raw",
+        "run_id": "inversion_ablation/baseline_peak_raw",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/baseline_peak_raw/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/baseline_peak_raw/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/baseline_peak_raw/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/baseline_peak_raw/run_log.json",
+        "mae": 7.470450817434321,
+        "rmse": 16.02987972626808
+      },
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/baseline_spectral_raw",
+        "run_id": "inversion_ablation/baseline_spectral_raw",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/baseline_spectral_raw/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/baseline_spectral_raw/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/baseline_spectral_raw/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/baseline_spectral_raw/run_log.json",
+        "mae": 18.60326496755225,
+        "rmse": 29.58345792820731
+      },
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/papagei_ridge_raw",
+        "run_id": "inversion_ablation/papagei_ridge_raw",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/papagei_ridge_raw/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/papagei_ridge_raw/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/papagei_ridge_raw/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/papagei_ridge_raw/run_log.json",
+        "mae": 11.402719745418002,
+        "rmse": 16.961503293053187
+      },
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/pulseppg_ridge_raw",
+        "run_id": "inversion_ablation/pulseppg_ridge_raw",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/pulseppg_ridge_raw/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/pulseppg_ridge_raw/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/pulseppg_ridge_raw/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/pulseppg_ridge_raw/run_log.json",
+        "mae": 8.06469728031772,
+        "rmse": 12.356690093870943
+      },
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/papagei_linear",
+        "run_id": "model_faithful/papagei_linear",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/papagei_linear/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/papagei_linear/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/papagei_linear/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/papagei_linear/run_log.json",
+        "mae": 11.528971521817729,
+        "rmse": 16.78046551966988
+      },
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/papagei_random_forest",
+        "run_id": "model_faithful/papagei_random_forest",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/papagei_random_forest/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/papagei_random_forest/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/papagei_random_forest/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/papagei_random_forest/run_log.json",
+        "mae": 11.470994376317266,
+        "rmse": 16.4607430678308
+      },
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/papagei_ridge",
+        "run_id": "model_faithful/papagei_ridge",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/papagei_ridge/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/papagei_ridge/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/papagei_ridge/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/papagei_ridge/run_log.json",
+        "mae": 11.462122270495025,
+        "rmse": 16.568073698868496
+      },
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_causal_running_zscore_linear",
+        "run_id": "model_faithful/pulseppg_causal_running_zscore_linear",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_causal_running_zscore_linear/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_causal_running_zscore_linear/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_causal_running_zscore_linear/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_causal_running_zscore_linear/run_log.json",
+        "mae": 8.142237960339779,
+        "rmse": 12.571822076943663
+      },
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_causal_running_zscore_random_forest",
+        "run_id": "model_faithful/pulseppg_causal_running_zscore_random_forest",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_causal_running_zscore_random_forest/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_causal_running_zscore_random_forest/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_causal_running_zscore_random_forest/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_causal_running_zscore_random_forest/run_log.json",
+        "mae": 6.8605832864069,
+        "rmse": 11.328713593680858
+      },
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_causal_running_zscore_ridge",
+        "run_id": "model_faithful/pulseppg_causal_running_zscore_ridge",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_causal_running_zscore_ridge/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_causal_running_zscore_ridge/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_causal_running_zscore_ridge/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_causal_running_zscore_ridge/run_log.json",
+        "mae": 8.053343323482201,
+        "rmse": 12.500113727688836
+      },
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_none_linear",
+        "run_id": "model_faithful/pulseppg_none_linear",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_none_linear/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_none_linear/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_none_linear/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_none_linear/run_log.json",
+        "mae": 8.139204041081165,
+        "rmse": 12.568951460509062
+      },
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_none_ridge",
+        "run_id": "model_faithful/pulseppg_none_ridge",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_none_ridge/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_none_ridge/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_none_ridge/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_none_ridge/run_log.json",
+        "mae": 8.050996927346885,
+        "rmse": 12.4975014935062
+      },
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_per_window_zscore_linear",
+        "run_id": "model_faithful/pulseppg_per_window_zscore_linear",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_per_window_zscore_linear/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_per_window_zscore_linear/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_per_window_zscore_linear/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_per_window_zscore_linear/run_log.json",
+        "mae": 8.139044949627655,
+        "rmse": 12.569079290997497
+      },
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_per_window_zscore_ridge",
+        "run_id": "model_faithful/pulseppg_per_window_zscore_ridge",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_per_window_zscore_ridge/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_per_window_zscore_ridge/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_per_window_zscore_ridge/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_per_window_zscore_ridge/run_log.json",
+        "mae": 8.050784000037083,
+        "rmse": 12.497685354886126
+      },
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_person_specific_zscore_linear",
+        "run_id": "model_faithful/pulseppg_person_specific_zscore_linear",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_person_specific_zscore_linear/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_person_specific_zscore_linear/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_person_specific_zscore_linear/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_person_specific_zscore_linear/run_log.json",
+        "mae": 8.140313319761145,
+        "rmse": 12.56946190228767
+      },
+      {
+        "run_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_person_specific_zscore_ridge",
+        "run_id": "model_faithful/pulseppg_person_specific_zscore_ridge",
+        "predictions_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_person_specific_zscore_ridge/predictions.csv",
+        "metrics_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_person_specific_zscore_ridge/metrics.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_person_specific_zscore_ridge/run_config.json",
+        "run_log_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_person_specific_zscore_ridge/run_log.json",
+        "mae": 8.052584090634392,
+        "rmse": 12.498605465780688
+      }
+    ],
+    "embedding_bundles": [
+      {
+        "bundle_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/papagei_features",
+        "model_name": "papagei",
+        "features_npy": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/papagei_features/papagei_features.npy",
+        "metadata_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/papagei_features/papagei_metadata.csv",
+        "manifest_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/papagei_features/papagei_manifest.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/papagei_features/run_config.json",
+        "processed_manifest_path": "data\\processed\\galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json",
+        "num_windows": 35135,
+        "embedding_dim": 512,
+        "preprocessing_mode": "harmonized",
+        "normalization": "per_window_zscore"
+      },
+      {
+        "bundle_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_features",
+        "model_name": "pulseppg",
+        "features_npy": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_features/pulseppg_features.npy",
+        "metadata_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_features/pulseppg_metadata.csv",
+        "manifest_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_features/pulseppg_manifest.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/harmonized/pulseppg_features/run_config.json",
+        "processed_manifest_path": "data\\processed\\galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json",
+        "num_windows": 35135,
+        "embedding_dim": 512,
+        "preprocessing_mode": "harmonized",
+        "normalization": "per_window_zscore"
+      },
+      {
+        "bundle_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/papagei_features_raw",
+        "model_name": "papagei",
+        "features_npy": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/papagei_features_raw/papagei_features.npy",
+        "metadata_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/papagei_features_raw/papagei_metadata.csv",
+        "manifest_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/papagei_features_raw/papagei_manifest.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/papagei_features_raw/run_config.json",
+        "processed_manifest_path": "data\\processed\\galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json",
+        "num_windows": 35135,
+        "embedding_dim": 512,
+        "preprocessing_mode": "harmonized",
+        "normalization": "per_window_zscore"
+      },
+      {
+        "bundle_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/pulseppg_features_raw",
+        "model_name": "pulseppg",
+        "features_npy": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/pulseppg_features_raw/pulseppg_features.npy",
+        "metadata_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/pulseppg_features_raw/pulseppg_metadata.csv",
+        "manifest_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/pulseppg_features_raw/pulseppg_manifest.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/inversion_ablation/pulseppg_features_raw/run_config.json",
+        "processed_manifest_path": "data\\processed\\galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json",
+        "num_windows": 35135,
+        "embedding_dim": 512,
+        "preprocessing_mode": "harmonized",
+        "normalization": "per_window_zscore"
+      },
+      {
+        "bundle_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/papagei_features",
+        "model_name": "papagei",
+        "features_npy": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/papagei_features/papagei_features.npy",
+        "metadata_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/papagei_features/papagei_metadata.csv",
+        "manifest_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/papagei_features/papagei_manifest.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/papagei_features/run_config.json",
+        "processed_manifest_path": "data\\processed\\galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json",
+        "num_windows": 35135,
+        "embedding_dim": 512,
+        "preprocessing_mode": "model_faithful",
+        "normalization": "per_window_zscore"
+      },
+      {
+        "bundle_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_features_causal_running_zscore",
+        "model_name": "pulseppg",
+        "features_npy": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_features_causal_running_zscore/pulseppg_features.npy",
+        "metadata_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_features_causal_running_zscore/pulseppg_metadata.csv",
+        "manifest_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_features_causal_running_zscore/pulseppg_manifest.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_features_causal_running_zscore/run_config.json",
+        "processed_manifest_path": "data\\processed\\galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json",
+        "num_windows": 35135,
+        "embedding_dim": 512,
+        "preprocessing_mode": "model_faithful",
+        "normalization": "causal_running_zscore"
+      },
+      {
+        "bundle_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_features_none",
+        "model_name": "pulseppg",
+        "features_npy": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_features_none/pulseppg_features.npy",
+        "metadata_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_features_none/pulseppg_metadata.csv",
+        "manifest_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_features_none/pulseppg_manifest.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_features_none/run_config.json",
+        "processed_manifest_path": "data\\processed\\galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json",
+        "num_windows": 35135,
+        "embedding_dim": 512,
+        "preprocessing_mode": "model_faithful",
+        "normalization": "none"
+      },
+      {
+        "bundle_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_features_per_window_zscore",
+        "model_name": "pulseppg",
+        "features_npy": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_features_per_window_zscore/pulseppg_features.npy",
+        "metadata_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_features_per_window_zscore/pulseppg_metadata.csv",
+        "manifest_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_features_per_window_zscore/pulseppg_manifest.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_features_per_window_zscore/run_config.json",
+        "processed_manifest_path": "data\\processed\\galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json",
+        "num_windows": 35135,
+        "embedding_dim": 512,
+        "preprocessing_mode": "model_faithful",
+        "normalization": "per_window_zscore"
+      },
+      {
+        "bundle_dir": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_features_person_specific_zscore",
+        "model_name": "pulseppg",
+        "features_npy": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_features_person_specific_zscore/pulseppg_features.npy",
+        "metadata_csv": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_features_person_specific_zscore/pulseppg_metadata.csv",
+        "manifest_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_features_person_specific_zscore/pulseppg_manifest.json",
+        "run_config_json": "experiments/week2_galaxyppg_corrected_2026-05-01/runs/model_faithful/pulseppg_features_person_specific_zscore/run_config.json",
+        "processed_manifest_path": "data\\processed\\galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json",
+        "num_windows": 35135,
+        "embedding_dim": 512,
+        "preprocessing_mode": "model_faithful",
+        "normalization": "person_specific_zscore"
+      }
+    ],
+    "summary_artifacts": {
+      "all_predictions": "experiments/week2_galaxyppg_corrected_2026-05-01/predictions/week2_all_standardized_predictions.csv",
+      "overall_metrics": "experiments/week2_galaxyppg_corrected_2026-05-01/metrics/overall_metrics.csv",
+      "participant_metrics": "experiments/week2_galaxyppg_corrected_2026-05-01/metrics/participant_level_metrics.csv",
+      "activity_metrics": "experiments/week2_galaxyppg_corrected_2026-05-01/metrics/activity_level_metrics.csv"
+    }
+  },
+  "week3": {
+    "root": "experiments/week3_galaxyppg_regime_oracle_2026-05-13",
+    "predictions_csv": "experiments/week3_galaxyppg_regime_oracle_2026-05-13/predictions.csv",
+    "metrics_json": "experiments/week3_galaxyppg_regime_oracle_2026-05-13/metrics.json",
+    "run_config_json": "experiments/week3_galaxyppg_regime_oracle_2026-05-13/run_config.json",
+    "run_log_json": "experiments/week3_galaxyppg_regime_oracle_2026-05-13/run_log.json"
+  },
+  "week4": {
+    "root": "experiments/week4_galaxyppg_lightweight_router_2026-05-13",
+    "predictions_csv": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/predictions.csv",
+    "metrics_json": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/metrics.json",
+    "run_config_json": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/run_config.json",
+    "run_log_json": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/run_log.json",
+    "feature_csv": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/features/week4_motion_quality_features.csv",
+    "fold_assignments_csv": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/tables/router_fold_assignments.csv",
+    "router_model_manifest_json": "experiments/week4_galaxyppg_lightweight_router_2026-05-13/models/router_model_manifest.json"
+  }
+}

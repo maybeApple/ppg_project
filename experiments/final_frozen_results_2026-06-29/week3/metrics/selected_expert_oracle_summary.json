@@ -1,0 +1,41 @@
+[
+  {
+    "expert": "classical",
+    "run": "peak_based/harmonized/NA/classical_peak",
+    "MAE": 7.865751282172412,
+    "RMSE": 16.10516715149217,
+    "median_absolute_error": 2.8210116732000046,
+    "p95_absolute_error": 37.13194201159927,
+    "catastrophic_error_rate_20bpm": 0.10604273168174072,
+    "n_windows": 7629,
+    "gain_vs_best_single_MAE": -1.047537606785479,
+    "gain_vs_best_single_p95": -11.333521082816905,
+    "gain_vs_best_single_catastrophic_rate": -0.02608467689081137
+  },
+  {
+    "expert": "foundation",
+    "run": "pulseppg/harmonized/per_window_zscore/random_forest",
+    "MAE": 6.818213675386933,
+    "RMSE": 11.344165012459614,
+    "median_absolute_error": 3.6609634563472326,
+    "p95_absolute_error": 25.798420928782367,
+    "catastrophic_error_rate_20bpm": 0.07995805479092935,
+    "n_windows": 7629,
+    "gain_vs_best_single_MAE": 0.0,
+    "gain_vs_best_single_p95": 0.0,
+    "gain_vs_best_single_catastrophic_rate": 0.0
+  },
+  {
+    "expert": "oracle_router",
+    "run": "per-window lower true error",
+    "MAE": 4.4969042060145705,
+    "RMSE": 8.919251567326516,
+    "median_absolute_error": 1.8547959724529477,
+    "p95_absolute_error": 19.105090503694672,
+    "catastrophic_error_rate_20bpm": 0.04823699043124918,
+    "n_windows": 7629,
+    "gain_vs_best_single_MAE": 2.3213094693723626,
+    "gain_vs_best_single_p95": 6.693330425087694,
+    "gain_vs_best_single_catastrophic_rate": 0.03172106435968017
+  }
+]

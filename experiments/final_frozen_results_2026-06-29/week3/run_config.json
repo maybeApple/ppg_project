@@ -1,0 +1,26 @@
+{
+  "schema_version": "run_config_v1",
+  "run_type": "week3_oracle_routing",
+  "module": "src.utils.build_week3_artifacts",
+  "argv": [
+    "python",
+    "-m",
+    "src.utils.build_week3_artifacts",
+    "--week2-root",
+    "experiments/week2_galaxyppg_corrected_2026-05-01",
+    "--output-root",
+    "experiments/week3_galaxyppg_regime_oracle_2026-05-13"
+  ],
+  "inputs": {
+    "week2_root": "experiments/week2_galaxyppg_corrected_2026-05-01",
+    "week2_predictions": "experiments/week2_galaxyppg_corrected_2026-05-01/predictions/week2_all_standardized_predictions.csv"
+  },
+  "artifacts": {
+    "expert_pairing_csv": "experiments/week3_galaxyppg_regime_oracle_2026-05-13/predictions/week3_window_regime_expert_errors.csv",
+    "oracle_predictions_csv": "experiments/week3_galaxyppg_regime_oracle_2026-05-13/predictions/week3_oracle_router_predictions.csv",
+    "metrics_json": "experiments/week3_galaxyppg_regime_oracle_2026-05-13/metrics/selected_expert_oracle_summary.json",
+    "all_pair_oracle_csv": "experiments/week3_galaxyppg_regime_oracle_2026-05-13/tables/oracle_all_pairs_table.csv",
+    "per_activity_csv": "experiments/week3_galaxyppg_regime_oracle_2026-05-13/tables/regime_by_activity.csv",
+    "per_participant_csv": "experiments/week3_galaxyppg_regime_oracle_2026-05-13/tables/regime_by_participant.csv"
+  }
+}

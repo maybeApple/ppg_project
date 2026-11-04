@@ -1,78 +1,111 @@
-# Local environments, editor state and Python caches
+# Keep the repository aligned with the subset documented in README.md.
+
+# OS / IDE / Python caches
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
 *.iml
-.venv/
-venv/
-.deps/
 **/__pycache__/
 *.py[cod]
+*.pyo
 .ipynb_checkpoints/
-.pytest*/
+.pytest_cache/
 .mypy_cache/
 .ruff_cache/
 .coverage
 htmlcov/
-build/
-dist/
-*.egg-info/
 
-# Data, downloaded weights and generated research artifacts stay local.
-/data/
-/external/*
-!/external/.gitkeep
-/experiments/
-/paper/
-/reports/
-/notebooks/
-/weekplan/
-*.zip
-*.pkl
-*.pt
-*.pth
-*.npy
-*.npz
-*.joblib
-
-# Personal plans, reports and scratch files
+# Local notes and reports not part of the reproducible repository
 AGENT.md
-AGENTS.md
 Current.md
-*.docx
-week*.md
+new_plan.docx
+week2_topic.md
+ppg-needtodo*.docx
+weekplan/week5-8.md
 _trash_review/
+
+# Logs and temporary files
 *.log
 *.tmp
 *.bak
 *.old
 *.out
 
-# Local analysis helpers outside the minimal reproduction workflow
-/scripts/*
+# Python packaging / build artifacts
+build/
+dist/
+*.egg-info/
+
+# Raw dataset stays local; keep only placement/readme notes
+data/raw/GalaxyPPG/*
+!data/raw/GalaxyPPG/README.md
+data/raw/PPG-DaLiA/*
+!data/raw/PPG-DaLiA/README.md
+data/raw/WildPPG-wrist/*
+!data/raw/WildPPG-wrist/README.md
+
+# Downloaded checkpoints stay local; the repository only keeps placeholder folders
+external/*
+!external/.gitkeep
+
+# Keep only the documented "full" feature bundles
+experiments/pulseppg_results/2026-03-18/pulseppg_features.npy
+experiments/pulseppg_results/2026-03-18/pulseppg_manifest.json
+experiments/pulseppg_results/2026-03-18/pulseppg_metadata.csv
+experiments/papagei_results/2026-03-18/papagei_features.npy
+experiments/papagei_results/2026-03-18/papagei_manifest.json
+experiments/papagei_results/2026-03-18/papagei_metadata.csv
+
+# Local verification scratch space
+experiments/_verification/
+
+# Regenerable Week 2+ experiment packages and frozen copies
+experiments/reproduced_corrected_*/
+experiments/reproducibility_manifest.json
+experiments/reproducibility_manifest.md
+experiments/week2_galaxyppg_corrected_*/
+experiments/week3_galaxyppg_regime_oracle_*/
+experiments/week4_galaxyppg_lightweight_router_*/
+experiments/week7_final_statistics/
+experiments/final_frozen_results_*/
+!experiments/final_frozen_results_2026-06-29/
+!experiments/final_frozen_results_2026-06-29/**
+experiments/final_frozen_results_2026-06-29/**/*.npy
+!experiments/final_frozen_results_2026-06-29/week2/runs/**/*features.npy
+
+# Local development and new experiment outputs (2026-11-04)
+.deps/
 /tests/
 /requirements-dev.txt
-/configs/week*.json
-/configs/submission_protocol.json
-/configs/conference_secondary_ablations.json
-/configs/external_reference_quality_groups.json
-/src/baseline/plot_baseline_results.py
-/src/baseline/run_baseline.py
-/src/baseline/spectral_refined.py
-/src/data/manifest_contracts.py
-/src/data/validate_processed.py
+.pytest*/
+PPG-DaLiA_and_WildPPG.zip
+data/processed/corrected_v2*/
+data/processed/external_*/
+experiments/conference_submission_*/
+experiments/conference_secondary_ablations_*/
+experiments/external_validation_*/
+experiments/router_development_*/
+experiments/adaptive_candidate_evaluation_*/
+experiments/scientific_audit_fixes_*/
+experiments/signal_refinement_development_*/
+
+# Retired helpers and local-only research utilities
+/src/utils/generate_progress_report.py
+/src/utils/backfill_reproducibility_artifacts.py
+/src/utils/build_external_validation_status.py
+/scripts/*
+/reports/
+/paper/
+/notebooks/
 /src/models/export_features_checked.py
 /src/models/preprocessing_v3.py
-/src/regression/
+/src/data/manifest_contracts.py
+/src/data/validate_processed.py
+/src/baseline/spectral_refined.py
 /src/routing/controls.py
-/src/utils/backfill_reproducibility_artifacts.py
 /src/utils/build_*.py
-!/src/utils/build_week3_artifacts.py
-/src/utils/freeze_final_results.py
-/src/utils/generate_progress_report.py
 /src/utils/package_*.py
-/src/utils/run_submission_ablations.py
-/src/utils/metrics.py
-/src/utils/preparation_dependencies.py
 /src/utils/run_submission_checked.py
+/src/utils/preparation_dependencies.py
+/src/utils/run_submission_ablations.py

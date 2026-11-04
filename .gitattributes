@@ -1,5 +1,4 @@
-# Provenance checks hash source/configuration bytes. Preserve the committed
-# bytes on every platform instead of applying checkout-dependent line endings.
+# Preserve source bytes used by input/provenance hashes across checkouts.
 /src/** -text
 /configs/** -text
 /requirements*.txt -text

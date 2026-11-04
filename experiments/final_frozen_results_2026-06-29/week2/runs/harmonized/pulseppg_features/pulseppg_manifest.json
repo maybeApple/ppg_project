@@ -1,0 +1,40 @@
+{
+  "model_name": "pulseppg",
+  "created_at_local": "2026-05-01T19:58:40.306612",
+  "num_windows": 35135,
+  "embedding_dim": 512,
+  "target_sampling_hz": 50,
+  "features_path": "pulseppg_features.npy",
+  "metadata_path": "pulseppg_metadata.csv",
+  "manifest_path": "pulseppg_manifest.json",
+  "source_windows_path": "../../../../../data/processed/windows/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_windows.jsonl.gz",
+  "checkpoint_path": "../../../../../external/pulseppg/pulseppg/experiments/out/pulseppg/checkpoint_best.pkl",
+  "external_repo_root": "../../../../../src/vendor/pulseppg_resnet1d.py",
+  "processed_manifest_path": "data\\processed\\galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json",
+  "experiment_config_path": "configs\\experiment_modes.json",
+  "experiment_mode": "harmonized",
+  "preprocessing": {
+    "mode": "harmonized",
+    "target_sampling_hz": 50,
+    "apply_bandpass": true,
+    "normalization": "per_window_zscore",
+    "low_hz": 0.5,
+    "high_hz": 12.0,
+    "filter_order": 4,
+    "operation_order": [
+      "timestamp_resample",
+      "per_window_zscore",
+      "chebyshev2_bandpass"
+    ]
+  },
+  "preprocessing_mode": "harmonized",
+  "apply_bandpass": true,
+  "normalization": "per_window_zscore",
+  "apply_zscore": true,
+  "batch_size": 256,
+  "device": "cpu",
+  "model_code_strategy": "vendored_minimal_source",
+  "model_code_path": "E:\\PycharmProjects\\ppg_project\\src\\vendor\\pulseppg_resnet1d.py",
+  "upstream_repository": "https://github.com/maxxu05/pulseppg",
+  "upstream_commit": "716eaf9cf966e8f76436f2263872ef38b1f90166"
+}
