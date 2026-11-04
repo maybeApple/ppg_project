@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import hashlib
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
@@ -70,7 +71,28 @@ class SignalPreprocessingConfig:
 
         payload = asdict(self)
         payload["operation_order"] = self.operation_order()
+        offline = self.normalization == "person_specific_zscore"
+        payload["deployment_compatible"] = not offline
+        payload["causality"] = "noncausal_full_participant_offline" if offline else "causal_at_window_end"
+        payload["prediction_available_at"] = "window_end_ms"
+        payload["normalization_scope"] = (
+            "all_available_participant_windows_including_future" if offline else
+            "completed_windows_of_same_participant_and_session_including_current"
+            if self.normalization == "causal_running_zscore" else "current_window_only"
+        )
+        payload["normalization_version"] = "window_end_causal_v2"
+        payload["running_history_policy"] = "reset_each_session; overlapping samples count once per completed window"
+        payload["filter_causality"] = "filtfilt_within_completed_window" if self.apply_bandpass else "no_filter"
         return payload
+
+    def validate_deployment(self, deployment_style: bool = True) -> None:
+        """Exclude offline full-person statistics from deployment-style experiments."""
+
+        if deployment_style and self.normalization == "person_specific_zscore":
+            raise ValueError(
+                "person_specific_zscore uses future participant windows and is a noncausal "
+                "offline ablation; use causal_running_zscore for deployment-style evaluation."
+            )
 
     def operation_order(self) -> list[str]:
         """Return the exact preprocessing order applied to the signal."""
@@ -305,7 +327,7 @@ def zscore_signal(signal_values: np.ndarray) -> np.ndarray:
 
 
 def normalize_matrix_by_participant(matrix: np.ndarray, windows: pd.DataFrame) -> np.ndarray:
-    """Apply participant-specific z-score normalization across exported windows."""
+    """Offline NONCAUSAL full-person normalization; unsuitable for deployment claims."""
 
     normalized = matrix.copy()
     if "participant_id" not in windows.columns:
@@ -324,27 +346,58 @@ def normalize_matrix_by_participant(matrix: np.ndarray, windows: pd.DataFrame) -
 
 
 def normalize_matrix_by_causal_participant_history(matrix: np.ndarray, windows: pd.DataFrame) -> np.ndarray:
-    """Apply expanding participant-level z-score using only current and earlier windows."""
+    """Normalize at each window end using only completed same-session history.
 
-    required_columns = {"participant_id", "window_start_ms"}
+    Running pooled moments avoid the former quadratic history concatenation. The
+    current complete window is available at decision time; later-ending windows
+    are excluded even when their start timestamps precede the current start.
+    Equal-ending windows use their own samples plus strictly earlier history,
+    so ties and arbitrary DataFrame indices cannot change the result.
+    """
+
+    required_columns = {"participant_id", "window_start_ms", "window_end_ms"}
     missing_columns = sorted(required_columns - set(windows.columns))
     if missing_columns:
         raise KeyError(f"causal_running_zscore requires columns: {missing_columns}")
 
+    matrix = np.asarray(matrix, dtype=np.float64)
+    if matrix.ndim != 2 or len(matrix) != len(windows) or not np.isfinite(matrix).all():
+        raise ValueError("Causal normalization requires finite 2D signals aligned with window metadata.")
+    group_columns = ["participant_id"] + (["session_id"] if "session_id" in windows else [])
+    if windows[group_columns].isna().any().any():
+        raise ValueError("Causal normalization requires nonmissing participant/session identities.")
+    starts = pd.to_numeric(windows["window_start_ms"], errors="coerce").to_numpy(dtype=float)
+    ends = pd.to_numeric(windows["window_end_ms"], errors="coerce").to_numpy(dtype=float)
+    if not (np.isfinite(starts).all() and np.isfinite(ends).all() and np.all(ends > starts)):
+        raise ValueError("Causal normalization requires finite timestamps and window_end_ms > window_start_ms.")
     normalized = matrix.copy()
-    ordered = windows.reset_index().sort_values(["participant_id", "window_start_ms", "index"])
-    for _, group in ordered.groupby("participant_id", sort=True):
-        history: list[np.ndarray] = []
-        for row in group.itertuples(index=False):
-            window_values = matrix[int(row.index)]
-            history.append(window_values)
-            history_values = np.concatenate(history)
-            mean_value = float(np.mean(history_values))
-            std_value = float(np.std(history_values))
-            if np.isfinite(std_value) and std_value > 0:
-                normalized[int(row.index)] = (window_values - mean_value) / std_value
-            else:
-                normalized[int(row.index)] = window_values - mean_value
+    ordered = windows.reset_index(drop=True).copy()
+    ordered["_row_position"] = np.arange(len(windows))
+    ordered["window_end_ms"] = ends
+    ordered = ordered.sort_values([*group_columns, "window_end_ms", "_row_position"])
+    grouper = group_columns[0] if len(group_columns) == 1 else group_columns
+    for _, group in ordered.groupby(grouper, sort=False):
+        count, mean, m2 = 0, 0.0, 0.0
+        for _, simultaneous in group.groupby("window_end_ms", sort=False):
+            moments = []
+            for position in simultaneous["_row_position"]:
+                values = matrix[int(position)]
+                sample_count = len(values)
+                sample_mean = float(values.mean())
+                sample_m2 = float(np.square(values - sample_mean).sum())
+                combined_count = count + sample_count
+                difference = sample_mean - mean
+                combined_mean = mean + difference * sample_count / combined_count
+                combined_m2 = m2 + sample_m2 + difference**2 * count * sample_count / combined_count
+                std = float(np.sqrt(max(0.0, combined_m2 / combined_count)))
+                normalized[int(position)] = (values - combined_mean) / std if std > 0 else values - combined_mean
+                moments.append((sample_count, sample_mean, sample_m2))
+            for sample_count, sample_mean, sample_m2 in moments:
+                combined_count = count + sample_count
+                difference = sample_mean - mean
+                m2 += sample_m2 + difference**2 * count * sample_count / combined_count
+                mean += difference * sample_count / combined_count
+                count = combined_count
     return normalized.astype(np.float32, copy=False)
 
 
@@ -449,8 +502,32 @@ def save_embedding_artifacts(
     manifest_dict = summary.to_dict()
     if extra_manifest_fields:
         manifest_dict.update(extra_manifest_fields)
+    manifest_dict["schema_version"] = "embedding_artifact_v2"
+    source_path = Path(source_windows_path)
+    manifest_dict["source_windows_sha256"] = _file_sha256(source_path) if source_path.is_file() else None
+    checkpoint = Path(checkpoint_path) if checkpoint_path is not None else None
+    manifest_dict["checkpoint_sha256"] = _file_sha256(checkpoint) if checkpoint is not None and checkpoint.is_file() else None
+    manifest_dict["features_sha256"] = _file_sha256(features_path)
+    manifest_dict["metadata_sha256"] = _file_sha256(metadata_path)
+    manifest_dict["preprocessing_code_sha256"] = _file_sha256(Path(__file__))
+    preprocessing = manifest_dict.get("preprocessing")
+    if isinstance(preprocessing, dict):
+        manifest_dict["deployment_compatible"] = preprocessing.get(
+            "deployment_compatible", preprocessing.get("normalization") != "person_specific_zscore"
+        )
+        manifest_dict["causality"] = preprocessing.get("causality", "unspecified_legacy_preprocessing")
     manifest_path.write_text(json.dumps(manifest_dict, indent=2, ensure_ascii=False), encoding="utf-8")
     return summary
+
+
+def _file_sha256(path: Path) -> str:
+    """Stream artifact hashes without materializing a checkpoint or signal cache."""
+
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
 
 
 def _resolve_manifest_path(manifest_path: Path, stored_path: str | Path) -> Path:

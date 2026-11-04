@@ -1,0 +1,8 @@
+# Preserve source bytes used by input/provenance hashes across checkouts.
+/src/** -text
+/configs/** -text
+/requirements*.txt -text
+/README.md -text
+/.gitignore -text
+/.gitattributes -text
+* whitespace=trailing-space,space-before-tab,cr-at-eol

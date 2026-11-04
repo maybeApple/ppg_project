@@ -1,0 +1,35 @@
+{
+  "schema_version": "submission_protocol_v2",
+  "seed": 42,
+  "dataset_manifest": "data/processed/corrected_v2/galaxyppg_ibi_w10_s2_beat_interval_instant_hr_median_manifest.json",
+  "dataset_root": "data/raw/GalaxyPPG",
+  "split_config": "configs/galaxyppg_submission_split.json",
+  "output_root": "experiments/conference_submission_2026_11_01",
+  "outer_folds": 5,
+  "inner_folds": 3,
+  "torch_threads": 4,
+  "batch_size": 64,
+  "preprocessing": {
+    "mode": "harmonized",
+    "normalization": "per_window_zscore",
+    "apply_bandpass": true,
+    "low_hz": 0.5,
+    "high_hz": 12.0,
+    "filter_order": 4,
+    "pulseppg_sampling_hz": 50,
+    "papagei_sampling_hz": 125
+  },
+  "checkpoints": {
+    "pulseppg": "external/pulseppg/pulseppg/experiments/out/pulseppg/checkpoint_best.pkl",
+    "papagei": "external/papagei-foundation-model/weights/papagei_s.pt"
+  },
+  "expert_selection": "participant_balanced_training_OOF_MAE_common_valid_windows",
+  "ridge_alphas": [0.1, 1.0, 10.0, 100.0],
+  "random_forest": {"n_estimators": 100, "max_depth": 16, "max_features": "sqrt", "min_samples_leaf_grid": [1, 5]},
+  "gate": {"classifier": "LogisticRegression", "C": 1.0, "threshold": 0.5, "class_weight": null, "calibration": "raw_probability_with_grouped_training_diagnostics"},
+  "primary_router": "motion_quality_soft",
+  "regime_bin_quantiles": [0.3333333333333333, 0.6666666666666666],
+  "evaluation": "common_finite_windows_all_seven_baselines",
+  "historically_exposed_test_participants": true,
+  "external_validation": "requires_real_data"
+}

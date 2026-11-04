@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from src.utils.legacy_protocol import add_legacy_argument, guard_legacy_execution, require_training_selection
+
 
 IDENTITY_COLUMNS = [
     "model_name",
@@ -63,6 +65,7 @@ class ExpertSpec:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
+    add_legacy_argument(parser)
     parser.add_argument(
         "--week2-root",
         type=Path,
@@ -95,6 +98,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    protocol_status = guard_legacy_execution(args, __name__)
     predictions_path = args.predictions_path or (
         args.week2_root / "predictions" / "week2_all_standardized_predictions.csv"
     )
@@ -105,16 +109,18 @@ def main() -> None:
     predictions_dir = output_root / "predictions"
     for path in [tables_dir, metrics_dir, figures_dir, predictions_dir]:
         path.mkdir(parents=True, exist_ok=True)
+    (output_root / "protocol_status.json").write_text(json.dumps(protocol_status, indent=2), encoding="utf-8")
 
     predictions = load_predictions(predictions_path)
     run_metrics = aggregate_run_metrics(predictions)
-    classical_spec = select_classical_expert(run_metrics, args.classical_model)
+    classical_spec = select_classical_expert(run_metrics, args.classical_model, allow_legacy_retrospective=True)
     foundation_spec = select_foundation_expert(
         run_metrics=run_metrics,
         foundation_model=args.foundation_model,
         regressor=args.foundation_regressor,
         preprocessing_mode=args.foundation_preprocessing_mode,
         normalization=args.foundation_normalization,
+        allow_legacy_retrospective=True,
     )
 
     classical = extract_expert_predictions(predictions, classical_spec, "classical")
@@ -226,7 +232,12 @@ def aggregate_run_metrics(predictions: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows).sort_values("MAE", na_position="last").reset_index(drop=True)
 
 
-def select_classical_expert(run_metrics: pd.DataFrame, model_name: str | None) -> ExpertSpec:
+def select_classical_expert(
+    run_metrics: pd.DataFrame, model_name: str | None, *,
+    selection_source: str | None = None, selection_protocol: str | None = None,
+    allow_legacy_retrospective: bool = False,
+) -> ExpertSpec:
+    require_training_selection(selection_source, selection_protocol, allow_legacy_retrospective=allow_legacy_retrospective)
     candidates = run_metrics[
         (run_metrics["inversion"] == True)  # noqa: E712
         & (run_metrics["model_name"].isin(["peak_based", "spectral"]))
@@ -244,7 +255,10 @@ def select_foundation_expert(
     regressor: str | None,
     preprocessing_mode: str | None,
     normalization: str | None,
+    *, selection_source: str | None = None, selection_protocol: str | None = None,
+    allow_legacy_retrospective: bool = False,
 ) -> ExpertSpec:
+    require_training_selection(selection_source, selection_protocol, allow_legacy_retrospective=allow_legacy_retrospective)
     candidates = run_metrics[
         (run_metrics["inversion"] == True)  # noqa: E712
         & (run_metrics["model_name"].isin(["pulseppg", "papagei"]))

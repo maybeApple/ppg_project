@@ -183,35 +183,55 @@ def build_chest_ecg_frame(values: Any) -> pd.DataFrame:
             "ecg_uv": ecg,
             "reference_source": "ecg",
         }
-    ).dropna(subset=["ecg_uv"]).reset_index(drop=True)
+    )
 
 
 def build_reference_frame_from_rpeaks(rpeaks: Any, ecg: pd.DataFrame) -> pd.DataFrame:
     """Build ECG reference rows, preferring supplied R-peak indices when present."""
 
-    reference = ecg.copy()
-    peaks = pd.to_numeric(pd.Series(np.asarray(rpeaks).reshape(-1)), errors="coerce").dropna().to_numpy(dtype=int)
-    peaks = peaks[(peaks >= 0) & (peaks < len(ecg))]
+    peaks = validated_ppgdalia_rpeaks(rpeaks, len(ecg))
     if len(peaks) >= 2:
         peak_timestamps = ecg["timestamp_ms"].iloc[peaks].to_numpy(dtype=float)
         rr_ms = np.diff(peak_timestamps)
-        valid = (rr_ms >= 60000.0 / 220.0) & (rr_ms <= 60000.0 / 35.0)
-        beat_timestamps = peak_timestamps[1:][valid]
-        rr_ms = rr_ms[valid]
+        # Keep all supplied intervals for the common configurable validator.
+        # Pre-filtering here would conceal rejected intervals in the manifest.
+        beat_timestamps = peak_timestamps[1:]
         ibi = pd.DataFrame(
             {
                 "timestamp_ms": beat_timestamps.astype("int64"),
                 "ecg_uv": pd.NA,
                 "rr_interval_ms": rr_ms,
-                "hr_bpm": 60000.0 / rr_ms,
+                "hr_bpm": np.divide(60000.0, rr_ms, out=np.full_like(rr_ms, np.nan), where=rr_ms > 0),
                 "reference_source": "ecg",
             }
         )
         return ibi.reset_index(drop=True)
 
+    reference = ecg.copy()
     reference["rr_interval_ms"] = pd.NA
     reference["hr_bpm"] = pd.NA
     return reference
+
+
+def validated_ppgdalia_rpeaks(rpeaks: Any, ecg_samples: int, audit: dict | None = None) -> np.ndarray:
+    """Deduplicate same-sample annotation repeats without inventing beat intervals.
+
+    Official S6 contains repeated identical indices. Removing their zero-length
+    intervals preserves every surrounding nonzero interval; no sorting, peak
+    movement, interpolation, smoothing or HR-dependent choice is performed.
+    """
+    raw_peaks = np.asarray([] if rpeaks is None else rpeaks).reshape(-1)
+    peaks = pd.to_numeric(pd.Series(raw_peaks), errors="coerce").to_numpy(dtype=float)
+    if len(peaks) and (not np.isfinite(peaks).all() or np.any(peaks != np.floor(peaks))):
+        raise ValueError("Supplied R-peak indices must be finite integers")
+    peaks = peaks.astype(np.int64)
+    if len(peaks) and ((peaks < 0).any() or (peaks >= ecg_samples).any() or (np.diff(peaks) < 0).any()):
+        raise ValueError("Supplied R peaks must be nondecreasing and within the original ECG sample array")
+    unique = peaks[np.r_[True, np.diff(peaks) != 0]] if len(peaks) else peaks
+    if audit is not None:
+        audit["supplied_peak_annotations"] = len(peaks)
+        audit["duplicate_same_sample_peak_annotations_removed"] = len(peaks)-len(unique)
+    return unique
 
 
 def build_activity_events(activity: Any, ppg: pd.DataFrame) -> pd.DataFrame:

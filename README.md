@@ -15,12 +15,72 @@ The current default flow uses:
 - downstream regressors: linear, ridge, random forest, gradient boosting
 - selectable experiment modes: `harmonized` and `model_faithful`
 
-The repository is intended to be runnable without manual source edits. The only external inputs are:
+The repository is intended to be runnable without manual source edits. The main Galaxy flow requires:
 
 1. the raw `GalaxyPPG` dataset
 2. the official pretrained model checkpoints
 
+The external-validation extension additionally requires the raw PPG-DaLiA and WildPPG wrist datasets.
+
 The minimal model-definition code required to load the checkpoints is already vendored under `src/vendor/`.
+
+## Current Progress (2026-11-04)
+
+The original repository structure and historical experiment artifacts are retained. Five obsolete report, metadata-backfill, status-summary and synthetic-smoke helpers have been removed. The experiment core adds corrected Galaxy fitting, real PPG-DaLiA / WildPPG wrist validation, and adaptive router training and inference.
+
+The corrected Galaxy study uses 18 training and 5 test participants. Expert selection, probe tuning, and gate fitting use participant-grouped training OOF predictions; final predictions are frozen before reference evaluation. All datasets use 10-second windows, a 2-second stride, and median instantaneous HR from valid RR intervals. The recorded results use the frozen v2 preprocessing recipe.
+
+| Evaluation | Test participants / paired windows | Training-selected single MAE | Original soft-router MAE | Peak MAE |
+| --- | --- | --- | --- | --- |
+| GalaxyPPG fixed holdout | 5 / 7,629 | 6.792 | 6.393 | 7.866 |
+| Galaxy → PPG-DaLiA | 15 / 63,737 | 12.523 | 12.135 | 8.654 |
+| Galaxy → WildPPG wrist | 16 / 375,881 | 23.648 | 18.117 | 15.808 |
+| PPG-DaLiA within-dataset | 3 / 12,308 | 9.544 | 8.621 | 9.544 |
+| WildPPG wrist within-dataset | 4 / 94,565 | 12.292 | 12.185 | 15.511 |
+
+Errors are bpm. Transfer keeps the Galaxy source experts and gates frozen; within-dataset studies fit separate linear/Ridge probes and gates on target-training participants. Native external PPG polarity is retained. WildPPG uses wrist green PPG and wrist ACC, with sternum ECG providing reference intervals.
+
+Training-only nested router development selected `direct_mq_soft`: MAE improved from 6.655 to 6.223 bpm, with P95 from 29.612 to 27.283 bpm across 27,497 common windows from the original 18 training participants. After the selected system was fitted and frozen, the same-window reassessment produced:
+
+| Dataset | Original router MAE | Direct MQ MAE | Original → Direct MQ P95 |
+| --- | --- | --- | --- |
+| GalaxyPPG | 6.393 | 6.076 | 26.729 → 25.346 |
+| PPG-DaLiA | 12.135 | 12.155 | 32.784 → 32.921 |
+| WildPPG wrist | 18.117 | 15.025 | 48.825 → 49.646 |
+
+Gains are dataset-dependent: DaLiA still favors Peak, while WildPPG's lower MAE accompanies a higher P95. These historically inspected cohorts are reassessments, not new confirmatory tests. Full LOSO/repeated grouped benchmarking, complete model-faithful/normalization ablations, and all Week 1–8 figures and manuscript deliverables are not yet complete.
+
+### Current Reproduction Commands
+
+Run from the repository root with raw data and the official checkpoints present. For this chain, use the checkpoint paths in `configs/conference_submission.json`. Use empty output directories for a fresh run; preserve completed local experiments. Install the external runtime dependencies, then export and fit the Galaxy source:
+
+```bash
+python -m pip install -r requirements-external.txt
+python -m src.data.export_processed --dataset-root data/raw/GalaxyPPG --split-config configs/galaxyppg_submission_split.json --reference-source ibi --min-hr-bpm 35 --max-hr-bpm 220 --output-root data/processed/corrected_v2
+python -m src.utils.run_submission --config configs/conference_submission.json --stage all
+python -m src.utils.run_submission --config configs/conference_submission.json --stage verify
+python -m src.utils.submission_statistics --results-root experiments/conference_submission_2026_11_01 --bootstrap-iterations 10000 --random-state 42
+```
+
+Place DaLiA participant files under `data/raw/PPG-DaLiA/` and native `WildPPG_Part_*.mat` recordings under `data/raw/WildPPG-wrist/`. Compact exports store continuous participant arrays and scalar window indices. Run frozen transfer and separate within-dataset studies after completing the Galaxy source:
+
+```bash
+python -m src.data.export_ppgdalia --dataset-root data/raw/PPG-DaLiA --output-root data/processed/external_2026_11_01/PPG-DaLiA_v2 --compact
+python -m src.data.export_wildppg_wrist --dataset-root data/raw/WildPPG-wrist --output-root data/processed/external_2026_11_01/WildPPG-wrist_v2
+python -m src.utils.run_external_research --manifest data/processed/external_2026_11_01/PPG-DaLiA_v2/ppg_dalia_ecg_w10_s2_beat_interval_instant_hr_median_manifest.json --units configs/ppgdalia_acc_units.json --output-root experiments/external_validation_2026_11_01/PPG-DaLiA --workers 2 --stage all
+python -m src.utils.run_external_research --manifest data/processed/external_2026_11_01/WildPPG-wrist_v2/wildppg_wrist_ecg_w10_s2_beat_interval_instant_hr_median_manifest.json --units configs/wildppg_acc_units.json --output-root experiments/external_validation_2026_11_01/WildPPG-wrist --workers 2 --stage all
+```
+
+Train the adaptive router, reassess the frozen candidate, compare identical windows, or inspect the inference-only interface:
+
+```bash
+python -m src.utils.run_router_development --config configs/router_development.json --stage all
+python -m src.utils.evaluate_adaptive_candidate
+python -m src.utils.compare_adaptive_candidate
+python -m src.utils.predict_adaptive_hr --help
+```
+
+The Week 2–4 and Week 7–8 commands later in this README document historical workflows and their saved artifacts. Use the current chain above for training-OOF expert/gate selection and frozen final evaluation. Guarded historical entrypoints require `--allow-legacy-retrospective` when explicitly reproducing those older analyses. New predictions, models, and result packages are generated locally. Historical reports remain unchanged and may mention the retired helper scripts; use the retained current commands above for new experiments.
 
 ## Corrected Flow
 
@@ -560,13 +620,13 @@ Week 3 uses the corrected GalaxyPPG Week 2 predictions to test whether estimator
 Build the default Week 3 artifact set:
 
 ```bash
-python -m src.utils.build_week3_artifacts --week2-root experiments/week2_galaxyppg_corrected_2026-05-01 --output-root experiments/week3_galaxyppg_regime_oracle_2026-05-13
+python -m src.utils.build_week3_artifacts --allow-legacy-retrospective --week2-root experiments/week2_galaxyppg_corrected_2026-05-01 --output-root experiments/week3_galaxyppg_regime_oracle_2026-05-13
 ```
 
 The default selection chooses the lowest-MAE inverted classical run and the lowest-MAE inverted foundation-model run from the Week 2 prediction table. You can override the expert choice, for example:
 
 ```bash
-python -m src.utils.build_week3_artifacts --foundation-model pulseppg --foundation-regressor ridge --foundation-preprocessing-mode harmonized
+python -m src.utils.build_week3_artifacts --allow-legacy-retrospective --foundation-model pulseppg --foundation-regressor ridge --foundation-preprocessing-mode harmonized
 ```
 
 Expected Week 3 artifacts:
@@ -668,12 +728,6 @@ experiments/week2_galaxyppg_corrected_2026-05-01/embedding_manifest.csv
 
 Week 5 starts the external-validation track by mapping PPG-DaLiA into the same canonical schema and label-generation rule used for GalaxyPPG.
 
-If the real raw dataset is unavailable, run the synthetic smoke test instead of creating fake result tables:
-
-```bash
-python scripts/smoke_ppgdalia_export.py
-```
-
 Place PPG-DaLiA raw participant pickle files under:
 
 ```text
@@ -721,13 +775,7 @@ python -m src.regression.train_regressor --feature-manifest experiments/week5_pp
 python -m src.regression.train_regressor --feature-manifest experiments/week5_ppgdalia_external_validation/runs/papagei_features/papagei_manifest.json --regressor ridge --random-state 42 --output-dir experiments/week5_ppgdalia_external_validation/runs/papagei_ridge
 ```
 
-Build the Week 5 external-validation result/status table after real metrics exist:
-
-```bash
-python -m src.utils.build_external_validation_status --experiments-root experiments --output-csv reports/external_validation_result_table.csv --output-md reports/external_validation_result_table.md
-```
-
-Rows without real metrics are marked `requires_real_data`.
+The current real-data transfer and within-dataset result tables are generated by `src.utils.run_external_research` using the commands in Current Progress above.
 
 The Week 5 external-validation folder should follow the same run-folder rule:
 
@@ -740,13 +788,7 @@ run_log.json
 
 ## Week 6 WildPPG Wrist External Validation
 
-Week 6 uses a configurable WildPPG wrist manifest because public WildPPG distributions can be organized differently across mirrors or subsets. Put raw files under:
-
-If the real raw dataset is unavailable, run the synthetic smoke test instead of creating fake result tables:
-
-```bash
-python scripts/smoke_wildppg_wrist_export.py
-```
+Native `WildPPG_Part_*.mat` recordings are now supported directly under `data/raw/WildPPG-wrist/`; use the current commands above. The configurable CSV manifest below remains available for legacy CSV layouts. Put those raw files under:
 
 ```text
 data/raw/WildPPG-wrist/
@@ -785,11 +827,7 @@ python -m src.baseline.run_baseline --processed-manifest data/processed/wildppg_
 
 Extract embeddings and train probes with the same commands used for Week 5, replacing the manifest path and output root with the WildPPG paths.
 
-Build the combined Week 5/6 external-validation result/status table with:
-
-```bash
-python -m src.utils.build_external_validation_status --experiments-root experiments --output-csv reports/external_validation_result_table.csv --output-md reports/external_validation_result_table.md
-```
+Use the current external-validation commands above to generate each dataset's `transfer/summary.csv`, `within_dataset/summary.csv`, paired predictions, and participant metrics.
 
 ## Week 7 Final Statistics
 
@@ -866,7 +904,7 @@ python -m src.utils.build_week2_artifacts --search-root experiments/week2_galaxy
 7. Rebuild the Week 3 oracle-routing artifacts from Week 2 predictions.
 
 ```bash
-python -m src.utils.build_week3_artifacts --week2-root experiments/week2_galaxyppg_corrected_2026-05-01 --output-root experiments/week3_galaxyppg_regime_oracle_2026-05-13
+python -m src.utils.build_week3_artifacts --allow-legacy-retrospective --week2-root experiments/week2_galaxyppg_corrected_2026-05-01 --output-root experiments/week3_galaxyppg_regime_oracle_2026-05-13
 ```
 
 8. Rebuild the Week 4 router artifacts, including feature CSVs, fold assignments, and trained fold models.
