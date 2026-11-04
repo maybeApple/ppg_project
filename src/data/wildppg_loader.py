@@ -39,6 +39,7 @@ class WildPPGRecord:
     rr_col: str | None
     reference_sampling_hz: float | None
     time_unit: str
+    timestamp_origin_ms: float | None = None
 
 
 def default_wildppg_root() -> Path:
@@ -57,7 +58,7 @@ def resolve_wildppg_root(dataset_root: str | Path | None = None) -> Path:
             "Expected a `wildppg_wrist_manifest.csv` file under that root."
         )
     manifest_path = root / "wildppg_wrist_manifest.csv"
-    if not manifest_path.exists():
+    if not manifest_path.exists() and not any(root.glob("WildPPG_Part_*.mat")):
         raise FileNotFoundError(
             f"Missing WildPPG wrist manifest: {manifest_path}. "
             "See `data/raw/WildPPG-wrist/README.md` for the required columns."
@@ -76,6 +77,9 @@ def load_wildppg_manifest(dataset_root: str | Path | None = None) -> list[WildPP
         raise KeyError(f"WildPPG manifest is missing required columns: {missing}")
     records: list[WildPPGRecord] = []
     for row in manifest.to_dict(orient="records"):
+        location = str(row.get("wear_location") or "wrist").strip().lower()
+        if location not in {"wrist", "left_wrist", "right_wrist"}:
+            raise ValueError(f"WildPPG wrist manifest contains a non-wrist recording: {location}")
         participant_id = str(row["participant_id"])
         session_id = str(row.get("session_id") or "recording")
         records.append(
@@ -99,6 +103,7 @@ def load_wildppg_manifest(dataset_root: str | Path | None = None) -> list[WildPP
                 rr_col=optional_str(row.get("rr_col")),
                 reference_sampling_hz=optional_float(row.get("reference_sampling_hz")),
                 time_unit=str(row.get("time_unit") or "ms").lower(),
+                timestamp_origin_ms=optional_float(row.get("timestamp_origin_ms")),
             )
         )
     return records
@@ -106,7 +111,10 @@ def load_wildppg_manifest(dataset_root: str | Path | None = None) -> list[WildPP
 
 def list_wildppg_participants(dataset_root: str | Path | None = None) -> list[str]:
     """Return participant IDs present in the WildPPG manifest."""
-
+    root = resolve_wildppg_root(dataset_root)
+    if not (root / "wildppg_wrist_manifest.csv").exists():
+        from .wildppg_native import native_paths
+        return sorted(native_paths(root))
     return sorted({record.participant_id for record in load_wildppg_manifest(dataset_root)})
 
 
@@ -119,6 +127,9 @@ def load_wildppg_participant_data(
 
     if reference_source != "ecg":
         raise ValueError("WildPPG wrist currently supports ECG or RR-reference labels only.")
+    root = resolve_wildppg_root(dataset_root)
+    if not (root / "wildppg_wrist_manifest.csv").exists():
+        return _load_native_participant_data(participant_id, root)
     records = [record for record in load_wildppg_manifest(dataset_root) if record.participant_id == participant_id]
     if not records:
         raise FileNotFoundError(f"WildPPG participant `{participant_id}` was not found in the manifest.")
@@ -174,11 +185,46 @@ def load_wildppg_participant_data(
     )
 
 
+def _load_native_participant_data(participant_id: str, root: Path) -> ParticipantData:
+    """Compatibility canonical frames; use compact export for full long recordings."""
+    from .wildppg_native import native_paths, read_native_signals
+    paths = native_paths(root)
+    if participant_id not in paths:
+        raise FileNotFoundError(f"Native WildPPG participant not found: {participant_id}")
+    signals = read_native_signals(paths[participant_id])
+    ppg = pd.DataFrame({"timestamp_ms": np.arange(len(signals["ppg"]))*1000/signals["ppg_sampling_hz"],
+        "ppg": signals["ppg"], "ppg_raw": signals["ppg"], "is_valid_ppg": np.isfinite(signals["ppg"]),
+        "ppg_inverted": False, "ppg_canonical_source": "native_mat:wrist.ppg_g.v"})
+    acc = pd.DataFrame(signals["acc"], columns=["acc_x", "acc_y", "acc_z"])
+    acc["timestamp_ms"] = np.arange(len(acc))*1000/signals["acc_sampling_hz"]
+    reference = pd.DataFrame({"timestamp_ms": np.arange(len(signals["ecg"]))*1000/signals["ecg_sampling_hz"],
+        "ecg_uv": signals["ecg"], "rr_interval_ms": np.nan, "hr_bpm": np.nan, "reference_source": "ecg"})
+    end_ms = int(min(len(ppg)/signals["ppg_sampling_hz"],len(acc)/signals["acc_sampling_hz"],
+                     len(reference)/signals["ecg_sampling_hz"])*1000)
+    session = f"{participant_id}:full_recording#1"
+    for frame in (ppg,acc,reference):
+        frame["session_id"] = session; frame["session_name"] = "full_recording"; frame["activity_label"] = "full_recording"
+    events = pd.DataFrame({"timestamp_ms": [0,end_ms],"session": ["full_recording"]*2,"status": ["ENTER","EXIT"]})
+    canonical_ppg = canonicalize_wildppg_ppg(participant_id,ppg)
+    canonical_acc = canonicalize_wildppg_accelerometer(participant_id,acc)
+    canonical_ref = canonicalize_wildppg_reference(participant_id,reference)
+    return ParticipantData(participant_id=participant_id,ppg=canonical_ppg,accelerometer=canonical_acc,
+        reference=canonical_ref,ecg=reference[["timestamp_ms","ecg_uv","reference_source"]],events=events,
+        reference_source="ecg",canonical_ppg=canonical_ppg,canonical_accelerometer=canonical_acc,
+        canonical_reference=canonical_ref)
+
+
 def load_ppg_frame(record: WildPPGRecord, offset_ms: int) -> pd.DataFrame:
     """Load one PPG CSV according to the manifest row."""
 
     frame = pd.read_csv(record.ppg_path)
-    timestamps = resolve_timestamps(frame, record.ppg_time_col, record.ppg_sampling_hz, record.time_unit, offset_ms)
+    if record.timestamp_origin_ms is None:
+        record.timestamp_origin_ms = (
+            float(_timestamps_in_ms(frame[record.ppg_time_col], record.time_unit)[0])
+            if record.ppg_time_col and len(frame) else 0.0
+        )
+    timestamps = resolve_timestamps(frame, record.ppg_time_col, record.ppg_sampling_hz, record.time_unit,
+                                    offset_ms, record.timestamp_origin_ms)
     ppg = pd.to_numeric(frame[record.ppg_col], errors="coerce")
     return pd.DataFrame(
         {
@@ -201,7 +247,8 @@ def load_acc_frame(record: WildPPGRecord, offset_ms: int) -> pd.DataFrame:
     if any(column is None for column in required):
         return pd.DataFrame(columns=["timestamp_ms", "acc_x", "acc_y", "acc_z"])
     frame = pd.read_csv(record.acc_path)
-    timestamps = resolve_timestamps(frame, record.acc_time_col, record.acc_sampling_hz, record.time_unit, offset_ms)
+    timestamps = resolve_timestamps(frame, record.acc_time_col, record.acc_sampling_hz, record.time_unit,
+                                    offset_ms, record.timestamp_origin_ms or 0.0)
     return pd.DataFrame(
         {
             "timestamp_ms": timestamps,
@@ -224,6 +271,7 @@ def load_reference_frame(record: WildPPGRecord, offset_ms: int) -> pd.DataFrame:
         record.reference_sampling_hz,
         record.time_unit,
         offset_ms,
+        record.timestamp_origin_ms or 0.0,
     )
     result = pd.DataFrame({"timestamp_ms": timestamps, "reference_source": "ecg"})
     if record.ecg_col:
@@ -247,24 +295,29 @@ def resolve_timestamps(
     sampling_hz: float | None,
     time_unit: str,
     offset_ms: int,
+    timestamp_origin_ms: float = 0.0,
 ) -> np.ndarray:
     """Resolve timestamps from a column or generate them from a sampling rate."""
 
     if time_col:
-        values = pd.to_numeric(frame[time_col], errors="coerce").to_numpy(dtype=float)
-        if time_unit in {"s", "sec", "second", "seconds"}:
-            values = values * 1000.0
-        elif time_unit in {"us", "microsecond", "microseconds"}:
-            values = values / 1000.0
-        elif time_unit in {"ns", "nanosecond", "nanoseconds"}:
-            values = values / 1_000_000.0
-        elif time_unit not in {"ms", "millisecond", "milliseconds"}:
-            raise ValueError(f"Unsupported time unit: {time_unit}")
-        values = values - np.nanmin(values)
-        return np.round(values + offset_ms).astype("int64")
-    if sampling_hz is None or sampling_hz <= 0:
+        values = _timestamps_in_ms(frame[time_col], time_unit)
+        if not np.isfinite(values).all() or (np.diff(values) <= 0).any():
+            raise ValueError("WildPPG timestamps must be finite and strictly increasing")
+        return np.round(values - timestamp_origin_ms + offset_ms).astype("int64")
+    if sampling_hz is None or not np.isfinite(sampling_hz) or sampling_hz <= 0:
         raise ValueError("A sampling rate is required when no timestamp column is provided.")
     return np.round(np.arange(len(frame), dtype=float) * 1000.0 / sampling_hz + offset_ms).astype("int64")
+
+
+def _timestamps_in_ms(values: pd.Series, time_unit: str) -> np.ndarray:
+    numeric = pd.to_numeric(values, errors="coerce").to_numpy(dtype=float)
+    scales = {"s": 1000.0, "sec": 1000.0, "second": 1000.0, "seconds": 1000.0,
+              "ms": 1.0, "millisecond": 1.0, "milliseconds": 1.0,
+              "us": 0.001, "microsecond": 0.001, "microseconds": 0.001,
+              "ns": 1e-6, "nanosecond": 1e-6, "nanoseconds": 1e-6}
+    if time_unit not in scales:
+        raise ValueError(f"Unsupported time unit: {time_unit}")
+    return numeric * scales[time_unit]
 
 
 def canonicalize_wildppg_ppg(participant_id: str, ppg: pd.DataFrame) -> pd.DataFrame:

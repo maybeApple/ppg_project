@@ -1,0 +1,37 @@
+{
+  "schema_version": "training_only_router_development_v1",
+  "scope": "original_Galaxy_training_participants_only",
+  "source_root": "experiments/conference_submission_2026_11_01",
+  "split_config": "configs/galaxyppg_submission_split.json",
+  "output_root": "experiments/router_development_2026_11_01_float64",
+  "probe_numeric_dtype": "float64",
+  "seed": 42,
+  "outer_folds": 5,
+  "meta_folds": 3,
+  "inner_folds": 3,
+  "workers": 2,
+  "threads_per_worker": 2,
+  "random_forest": {"n_estimators": 100, "max_depth": 16, "max_features": "sqrt", "min_samples_leaf": 5},
+  "rf_hyperparameter_selection": "fixed_in_this_protocol_no_grid_search",
+  "experts": ["peak_based", "spectral", "pulseppg_linear", "pulseppg_ridge", "pulseppg_random_forest", "papagei_linear", "papagei_ridge", "papagei_random_forest"],
+  "router": {"C": 1.0, "regularization": 0.02, "smooth_epsilon_bpm": 0.5, "regret_cap_quantile": 0.95, "max_iter": 500},
+  "candidates": [
+    {"id": "legacy_mq_soft", "method": "legacy_logistic", "features": "motion_quality", "soft": true},
+    {"id": "legacy_mq_hard", "method": "legacy_logistic", "features": "motion_quality", "soft": false},
+    {"id": "balanced_mq_soft", "method": "balanced_logistic", "features": "motion_quality", "soft": true},
+    {"id": "regret_mq_hard", "method": "regret_logistic", "features": "motion_quality", "soft": false},
+    {"id": "direct_mq_soft", "method": "direct_soft", "features": "motion_quality", "soft": true},
+    {"id": "direct_quality_soft", "method": "direct_soft", "features": "quality", "soft": true},
+    {"id": "direct_motion_soft", "method": "direct_soft", "features": "motion", "soft": true}
+  ],
+  "selection": {
+    "metric": "participant_balanced_MAE",
+    "guard_reference": "legacy_mq_soft",
+    "maximum_relative_participant_p95": 1.0,
+    "maximum_participant_catastrophic_rate_increase": 0.0,
+    "allow_best_single_fallback": true,
+    "interpretation": "development_selection_on_grouped_training_CV_not_a_new_confirmatory_test"
+  },
+  "test_evaluation": false,
+  "paper_updates": false
+}

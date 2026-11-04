@@ -1,0 +1,3 @@
+-r requirements.txt
+# Native WildPPG raw ECG reference extraction (frozen XQRS implementation).
+wfdb==4.3.0

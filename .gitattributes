@@ -1,0 +1,9 @@
+# Provenance checks hash source/configuration bytes. Preserve the committed
+# bytes on every platform instead of applying checkout-dependent line endings.
+/src/** -text
+/configs/** -text
+/requirements*.txt -text
+/README.md -text
+/.gitignore -text
+/.gitattributes -text
+* whitespace=trailing-space,space-before-tab,cr-at-eol

@@ -1,0 +1,49 @@
+{
+  "dataset": "WildPPG-wrist",
+  "acc_scale_to_mps2": 9.80665,
+  "external_input_unit": "g_assumed_unverified",
+  "external_input_field": "WildPPG_Part_*.mat -> wrist -> acc_x/acc_y/acc_z -> v",
+  "target_unit": "m/s^2",
+  "source_native_is_mps2": true,
+  "external_units_verified": false,
+  "declared_on": "2026-11-01",
+  "declaration_timing": "Assumed g factor chosen from sensor-only evidence before external model error results; do not tune the scale from target HR outcomes.",
+  "source_evidence": [
+    {
+      "url": "https://ic.kaist.ac.kr/publications/papers/park2025galaxyppg.pdf",
+      "location": "Data Records, Galaxy Watch, page 5",
+      "finding": "The released GalaxyPPG ACC CSV axes have already been converted to m/s^2 using 9.81/(16383.75/4.0)*value. Keep source CSV values unchanged."
+    }
+  ],
+  "external_evidence": [
+    {
+      "url": "https://github.com/eth-siplab/WildPPG/blob/3ed0584893d82c546421946286e58b0acb5bb037/docs/wildppg_datasheet.pdf",
+      "finding": "The accelerometer is an STMicroelectronics LIS2DH acquired at 200 Hz; released synchronized sensor streams are 128 Hz. The inspected datasheet, file-structure guide, README, and native trace descriptions do not state a numerical unit for MAT v fields."
+    },
+    {
+      "url": "https://static.siplab.org/papers/neurips2024-wildppg.pdf",
+      "location": "Appendix D, Figure 5, page 20",
+      "local_visual_verification": "experiments/external_validation_2026_11_01/source_notes/wildppg_figure5_page20.png",
+      "finding": "The published motion analysis labels its axis accelerometer magnitude (g), with most observations near one g. This supports the g assumption and agrees with native MAT values; the figure alone does not explicitly document the numeric scaling of the released MAT v fields."
+    },
+    {
+      "participant": "an0",
+      "sensor_only_observation_duration_seconds": 300,
+      "native_trace_description": "x-axis of MEMS accelerometer",
+      "native_axis_ranges": {
+        "x": [-1.95, 2.018],
+        "y": [-2.799, 1.664],
+        "z": [-1.5, 1.275]
+      },
+      "native_vector_norm_quantiles": {
+        "0.1": 0.927,
+        "0.5": 0.965,
+        "0.9": 1.014
+      },
+      "finding": "The observed near-one gravity magnitude is consistent with g. This is an empirical plausibility check, not documentary verification of units or calibration."
+    }
+  ],
+  "conversion_policy": "Diagnostic only: multiply preserved native WildPPG ACC once by 9.80665 under an explicitly unverified g assumption. Preserve the native signals. Do not describe resulting motion-aware scores as fully unit-verified external transfer.",
+  "remaining_evidence_needed": "Author-provided numeric unit definition or original firmware/export conversion code linking the released MAT acceleration values to g or SI. The LIS2DH model alone cannot establish configured sensitivity or export scaling.",
+  "unit_independent_outputs": "Individual PPG-only experts and gates proven to use no ACC-dependent feature may be reported separately with the corresponding inference feature audit; this contract does not by itself prove a gate is ACC-independent."
+}
