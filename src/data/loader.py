@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
+import numpy as np
 import pandas as pd
 
 from .canonical import (
@@ -192,12 +193,14 @@ def load_galaxy_watch_ppg(participant_dir: str | Path) -> pd.DataFrame:
     )
     ppg = _coerce_numeric(ppg, columns=["ppg_data_received_ms", "timestamp_ms", "ppg_raw", "ppg_status"])
     ppg = ppg.dropna(subset=["timestamp_ms", "ppg_raw"])
+    ppg = ppg[np.isfinite(ppg["timestamp_ms"]) & np.isfinite(ppg["ppg_raw"])].copy()
     ppg["timestamp_ms"] = ppg["timestamp_ms"].astype("int64")
     ppg["ppg_raw"] = ppg["ppg_raw"].astype("float64")
     ppg["ppg"] = -ppg["ppg_raw"]
     ppg["ppg_status"] = ppg["ppg_status"].fillna(0).astype("int64")
     ppg["is_valid_ppg"] = ppg["ppg_status"].isin({0, 500})
     ppg["ppg_inverted"] = True
+    ppg["ppg_inversion_count"] = 1
     ppg["ppg_canonical_source"] = "GalaxyWatch/PPG.csv:ppg_raw_inverted"
     return ppg.sort_values("timestamp_ms").drop_duplicates("timestamp_ms", keep="last").reset_index(drop=True)
 
@@ -266,9 +269,10 @@ def load_polar_reference(
         reference = pd.read_csv(reference_path, usecols=["phoneTimestamp", "duration"])
         reference = reference.rename(columns={"phoneTimestamp": "raw_timestamp_ms", "duration": "rr_interval_ms"})
         reference = _coerce_numeric(reference, columns=["raw_timestamp_ms", "rr_interval_ms"])
-        reference = reference.dropna(subset=["raw_timestamp_ms", "rr_interval_ms"])
-        reference = reference[reference["rr_interval_ms"] > 0].copy()
-        reference["hr_bpm"] = 60000.0 / reference["rr_interval_ms"]
+        # Preserve invalid RR observations for the common label validator and
+        # its rejection counts. Only invalid timestamps cannot be aligned.
+        reference = reference[np.isfinite(reference["raw_timestamp_ms"])].copy()
+        reference["hr_bpm"] = 60000.0 / reference["rr_interval_ms"].where(reference["rr_interval_ms"] > 0)
         reference["hrv_value"] = pd.NA
     elif reference_source == "ecg":
         reference = load_polar_ecg(participant_dir=participant_dir, polar_offset_ms=polar_offset_ms)
@@ -303,7 +307,9 @@ def load_polar_ecg(
     ecg = pd.read_csv(ecg_path, usecols=["phoneTimestamp", "ecg"])
     ecg = ecg.rename(columns={"phoneTimestamp": "raw_timestamp_ms", "ecg": "ecg_uv"})
     ecg = _coerce_numeric(ecg, columns=["raw_timestamp_ms", "ecg_uv"])
-    ecg = ecg.dropna(subset=["raw_timestamp_ms", "ecg_uv"])
+    # Keep nonfinite ECG amplitudes: the detector must report gaps/failures,
+    # rather than hide them by connecting samples across missing observations.
+    ecg = ecg[np.isfinite(ecg["raw_timestamp_ms"])].copy()
     ecg["timestamp_ms"] = ecg["raw_timestamp_ms"].astype("int64") - polar_offset_ms
     ecg["reference_source"] = "ecg"
     return ecg.sort_values("timestamp_ms").drop_duplicates("timestamp_ms", keep="last").reset_index(drop=True)

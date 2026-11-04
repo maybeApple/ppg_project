@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 from pathlib import Path
 
 from src.data import (
@@ -23,7 +24,7 @@ def parse_args() -> argparse.Namespace:
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset-root", type=Path, default=None)
-    parser.add_argument("--output-root", type=Path, default=None)
+    parser.add_argument("--output-root", type=Path, default=Path(__file__).resolve().parents[2] / "data/processed/corrected_v2")
     parser.add_argument("--reference-source", choices=["auto", "hr", "ibi", "ecg"], default="ibi")
     parser.add_argument("--window-seconds", type=float, default=10.0)
     parser.add_argument("--stride-seconds", type=float, default=2.0)
@@ -35,6 +36,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--label-aggregation", choices=["median", "mean"], default="median")
     parser.add_argument("--min-valid-beats", type=int, default=2)
     parser.add_argument("--min-reference-samples", type=int, default=1)
+    parser.add_argument("--min-hr-bpm", type=float, default=35.0)
+    parser.add_argument("--max-hr-bpm", type=float, default=220.0)
     parser.add_argument("--test-size", type=float, default=0.2)
     parser.add_argument("--random-state", type=int, default=42)
     parser.add_argument("--split-config", type=Path, default=None)
@@ -58,6 +61,7 @@ def main() -> None:
                 f"{missing_participants}"
             )
 
+    label_audit: dict[str, object] = {}
     windows = build_window_dataset(
         dataset_root=dataset_root,
         participant_ids=participant_ids,
@@ -68,6 +72,9 @@ def main() -> None:
         label_aggregation=args.label_aggregation,
         min_valid_beats=args.min_valid_beats,
         min_reference_samples=args.min_reference_samples,
+        min_hr_bpm=args.min_hr_bpm,
+        max_hr_bpm=args.max_hr_bpm,
+        audit=label_audit,
     )
     if windows.empty:
         raise RuntimeError(
@@ -86,6 +93,7 @@ def main() -> None:
         train_participants=train_participants,
         test_participants=test_participants,
     )
+    git_revision = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False).stdout.strip()
     manifest = save_processed_dataset(
         windows=annotated_windows,
         dataset_root=dataset_root,
@@ -99,12 +107,17 @@ def main() -> None:
         label_aggregation=args.label_aggregation,
         min_valid_beats=args.min_valid_beats,
         min_reference_samples=args.min_reference_samples,
-        label_generation=LabelGenerationConfig(
+        label_generation={**LabelGenerationConfig(
             method=args.label_method,
             aggregation=args.label_aggregation,
             min_valid_beats=args.min_valid_beats,
             min_reference_samples=args.min_reference_samples,
-        ).to_dict(),
+            min_hr_bpm=args.min_hr_bpm,
+            max_hr_bpm=args.max_hr_bpm,
+        ).to_dict(), "window_audit": label_audit, "git_commit": git_revision,
+            "export_command": "python -m src.data.export_processed " + " ".join(__import__("sys").argv[1:]),
+            "polarity": {"dataset": "GalaxyPPG", "rule": "ppg = -ppg_raw", "inversion_count": 1,
+                         "raw_signal_column": "ppg_raw_values", "canonical_signal_column": "ppg_values"}},
         test_size=args.test_size,
         random_state=args.random_state,
         train_participants=train_participants,

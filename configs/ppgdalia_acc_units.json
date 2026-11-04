@@ -1,0 +1,41 @@
+{
+  "dataset": "PPG-DaLiA",
+  "acc_scale_to_mps2": 9.80665,
+  "external_input_unit": "g",
+  "external_input_field": "Sx.pkl -> signal -> wrist -> ACC",
+  "target_unit": "m/s^2",
+  "source_native_is_mps2": true,
+  "external_units_verified": true,
+  "verified_on": "2026-11-01",
+  "source_evidence": [
+    {
+      "url": "https://ic.kaist.ac.kr/publications/papers/park2025galaxyppg.pdf",
+      "location": "Data Records, Galaxy Watch, page 5",
+      "finding": "The released GalaxyPPG ACC CSV axes have already been converted to m/s^2 using 9.81/(16383.75/4.0)*value. Keep source CSV values unchanged."
+    },
+    {
+      "local_file": "data/raw/GalaxyPPG/P02/GalaxyWatch/ACC.csv",
+      "finding": "Released CSV contains floating-point SI-scale axes, for example [1.4035029411315918, 2.2992539405822754, 9.551484107971191]."
+    }
+  ],
+  "external_evidence": [
+    {
+      "source": "Official PPG_FieldStudy_readme.pdf in the UCI PPG-DaLiA release",
+      "url": "https://archive.ics.uci.edu/static/public/495/ppg%2Bdalia.zip",
+      "location": "Raw Empatica E4, ACC.csv",
+      "finding": "Raw E4.zip ACC.csv has three 32 Hz axes in units of 1/64 g. This statement applies to the raw CSV, not automatically to the synchronized PKL."
+    },
+    {
+      "local_archive": "PPG-DaLiA_and_WildPPG.zip",
+      "raw_member": "PPG-DaLiA/data/PPG_FieldStudy/S1/S1_E4.zip -> ACC.csv",
+      "synchronized_member": "PPG-DaLiA/data/PPG_FieldStudy/S1/S1.pkl -> signal -> wrist -> ACC",
+      "raw_csv_data_shape": [298950, 3],
+      "raw_csv_matching_start_index_zero_based": 4154,
+      "compared_samples": 10,
+      "matching_occurrences_in_raw_csv": 1,
+      "finding": "The first ten synchronized PKL samples multiplied by 64 exactly match ten consecutive raw CSV samples. PKL values therefore have unit g; e.g. [-0.765625, -0.078125, 0.671875] corresponds to [-49, -5, 43] raw counts."
+    }
+  ],
+  "conversion_policy": "Multiply preserved synchronized PKL ACC values once by standard gravity 9.80665. Do not apply a further divide by 64. This contract does not apply to raw E4.zip/ACC.csv input.",
+  "source_scale_note": "GalaxyPPG authors used 9.81 in the original raw SDK conversion. The frozen source values remain as released; external g values use standard gravity without changing or refitting the source model."
+}

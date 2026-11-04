@@ -41,6 +41,7 @@ LABEL_COLUMNS = [
     "reference_source",
     "ppg_inverted",
     "ppg_canonical_source",
+    "ppg_inversion_count",
 ]
 
 
@@ -134,6 +135,13 @@ def annotate_window_dataset(
     if windows.empty:
         return windows.copy()
 
+    overlap = set(train_participants) & set(test_participants)
+    if overlap:
+        raise ValueError(f"Participant leakage between train and test: {sorted(overlap)}")
+    unassigned = set(windows["participant_id"].unique()) - set(train_participants) - set(test_participants)
+    if unassigned:
+        raise ValueError(f"Participants absent from the split: {sorted(unassigned)}")
+
     split_by_participant = {participant_id: "train" for participant_id in train_participants}
     split_by_participant.update({participant_id: "test" for participant_id in test_participants})
 
@@ -148,6 +156,8 @@ def annotate_window_dataset(
         ),
     )
     annotated.insert(1, "split", annotated["participant_id"].map(split_by_participant).fillna("unassigned"))
+    if annotated["window_uid"].duplicated().any():
+        raise ValueError("Window IDs must be unique; include participant identity in session_id")
     return annotated
 
 

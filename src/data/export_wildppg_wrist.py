@@ -18,7 +18,7 @@ from src.data.wildppg_loader import (
     load_wildppg_participant_data,
     resolve_wildppg_root,
 )
-from src.data.windowing import default_stride_rationale, generate_windows_from_sessions, split_by_participant
+from src.data.windowing import default_stride_rationale, generate_windows_from_sessions, split_by_participant, summarize_window_audit
 
 
 def parse_args() -> argparse.Namespace:
@@ -35,6 +35,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--label-aggregation", choices=["median", "mean"], default="median")
     parser.add_argument("--min-valid-beats", type=int, default=2)
     parser.add_argument("--min-reference-samples", type=int, default=1)
+    parser.add_argument("--min-hr-bpm", type=float, default=35.0)
+    parser.add_argument("--max-hr-bpm", type=float, default=220.0)
     parser.add_argument("--min-ppg-coverage", type=float, default=0.8)
     parser.add_argument("--test-size", type=float, default=0.2)
     parser.add_argument("--random-state", type=int, default=42)
@@ -45,7 +47,18 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     dataset_root = resolve_wildppg_root(args.dataset_root)
+    if not (dataset_root / "wildppg_wrist_manifest.csv").exists():
+        if args.label_method != "beat_interval_instant_hr" or args.label_aggregation != "median":
+            raise ValueError("Native corrected WildPPG requires median beat-interval instantaneous HR")
+        from src.data.wildppg_native import export_native_dataset
+        path = export_native_dataset(dataset_root,
+            args.output_root or Path("data/processed/external_2026_11_01/WildPPG-wrist_v2"),
+            args.participants, args.window_seconds, args.stride_seconds, args.min_valid_beats,
+            args.min_hr_bpm, args.max_hr_bpm, args.min_ppg_coverage, args.test_size, args.random_state)
+        print(path.read_text(encoding="utf-8"))
+        return
     participant_ids = args.participants or list_wildppg_participants(dataset_root)
+    label_audit: dict[str, object] = {}
     windows = build_wildppg_window_dataset(
         dataset_root=dataset_root,
         participant_ids=participant_ids,
@@ -56,6 +69,9 @@ def main() -> None:
         min_valid_beats=args.min_valid_beats,
         min_reference_samples=args.min_reference_samples,
         min_ppg_coverage=args.min_ppg_coverage,
+        min_hr_bpm=args.min_hr_bpm,
+        max_hr_bpm=args.max_hr_bpm,
+        audit=label_audit,
     )
     if windows.empty:
         raise RuntimeError(
@@ -92,7 +108,11 @@ def main() -> None:
                 aggregation=args.label_aggregation,
                 min_valid_beats=args.min_valid_beats,
                 min_reference_samples=args.min_reference_samples,
+                min_hr_bpm=args.min_hr_bpm,
+                max_hr_bpm=args.max_hr_bpm,
             ).to_dict(),
+            "window_audit": label_audit,
+            "polarity": {"dataset": DATASET_NAME, "rule": "ppg = ppg_raw", "inversion_count": 0},
             "dataset_note": "WildPPG wrist labels are generated from the manifest-configured ECG or RR-reference columns.",
             "stride_rationale": default_stride_rationale(),
         },
@@ -123,15 +143,27 @@ def build_wildppg_window_dataset(
     min_valid_beats: int = 2,
     min_reference_samples: int = 1,
     min_ppg_coverage: float = 0.8,
+    min_hr_bpm: float = 35.0,
+    max_hr_bpm: float = 220.0,
+    audit: dict[str, object] | None = None,
 ) -> pd.DataFrame:
     """Load WildPPG wrist records and generate one window table."""
 
+    resolved_root = resolve_wildppg_root(dataset_root)
+    if not (resolved_root / "wildppg_wrist_manifest.csv").exists():
+        raise ValueError(
+            "Native long-recording MAT data requires the compact XQRS exporter; "
+            "run python -m src.data.wildppg_native or the export_wildppg_wrist CLI. "
+            "The legacy full-DataFrame window builder must not relabel native ECG."
+        )
     selected_participants = participant_ids or list_wildppg_participants(dataset_root)
     label_config = LabelGenerationConfig(
         method=label_method,
         aggregation=label_aggregation,
         min_valid_beats=min_valid_beats,
         min_reference_samples=min_reference_samples,
+        min_hr_bpm=min_hr_bpm,
+        max_hr_bpm=max_hr_bpm,
     )
     all_windows: list[pd.DataFrame] = []
     for participant_id in selected_participants:
@@ -147,9 +179,12 @@ def build_wildppg_window_dataset(
             stride_seconds=stride_seconds,
             label_config=label_config,
             min_ppg_coverage=min_ppg_coverage,
+            audit=audit,
         )
         if not participant_windows.empty:
             all_windows.append(participant_windows)
+    if audit is not None:
+        audit["summary"] = summarize_window_audit(audit)
     if not all_windows:
         return pd.DataFrame()
     return pd.concat(all_windows, ignore_index=True)

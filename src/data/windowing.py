@@ -7,10 +7,11 @@ import random
 from pathlib import Path
 from typing import Literal
 
+import numpy as np
 import pandas as pd
 
 from .loader import load_participant_data, list_participants
-from .labels import LabelAggregation, LabelGenerationConfig, LabelMethod, compute_window_label
+from .labels import LabelAggregation, LabelGenerationConfig, LabelMethod, compute_window_label, build_instant_hr_from_ecg
 from .preprocessing import AlignedSession, align_participant_sessions
 
 #Each sample window is 10 seconds long.The window sliding step is 2 seconds.
@@ -32,6 +33,9 @@ def build_window_dataset(
     min_reference_samples: int = 1,
     min_valid_beats: int = DEFAULT_MIN_VALID_BEATS,
     min_ppg_coverage: float = 0.8,
+    min_hr_bpm: float = 35.0,
+    max_hr_bpm: float = 220.0,
+    audit: dict[str, object] | None = None,
 ) -> pd.DataFrame:
     """Load, align, and window the whole dataset into a single table."""
 
@@ -42,6 +46,8 @@ def build_window_dataset(
         aggregation=label_aggregation,
         min_valid_beats=min_valid_beats,
         min_reference_samples=min_reference_samples,
+        min_hr_bpm=min_hr_bpm,
+        max_hr_bpm=max_hr_bpm,
     )
 
     for participant_id in selected_participants:
@@ -54,15 +60,25 @@ def build_window_dataset(
             participant=participant,
             min_duration_seconds=min_duration_seconds,
         )
+        if audit is not None:
+            audit.setdefault("participants", []).append({
+                "participant_id": participant_id, "reference_source": participant.reference_source,
+                "loaded_reference_rows": len(participant.reference), "aligned_sessions": len(aligned_sessions),
+                "status": "aligned" if aligned_sessions else "no_eligible_aligned_sessions",
+            })
         session_windows = generate_windows_from_sessions(
             aligned_sessions=aligned_sessions,
             window_seconds=window_seconds,
             stride_seconds=stride_seconds,
             label_config=label_config,
             min_ppg_coverage=min_ppg_coverage,
+            audit=audit,
         )
         if not session_windows.empty:
             all_windows.append(session_windows)
+
+    if audit is not None:
+        audit["summary"] = summarize_window_audit(audit)
 
     if not all_windows:
         return pd.DataFrame(
@@ -103,6 +119,7 @@ def generate_windows_from_sessions(
     stride_seconds: float = DEFAULT_STRIDE_SECONDS,
     label_config: LabelGenerationConfig | None = None,
     min_ppg_coverage: float = 0.8,
+    audit: dict[str, object] | None = None,
 ) -> pd.DataFrame:
     """Window multiple aligned sessions and concatenate the results."""
 
@@ -114,6 +131,7 @@ def generate_windows_from_sessions(
             stride_seconds=stride_seconds,
             label_config=resolved_label_config,
             min_ppg_coverage=min_ppg_coverage,
+            audit=audit,
         )
         for session in aligned_sessions
     ]
@@ -129,6 +147,7 @@ def generate_session_windows(
     stride_seconds: float = DEFAULT_STRIDE_SECONDS,
     label_config: LabelGenerationConfig | None = None,
     min_ppg_coverage: float = 0.8,
+    audit: dict[str, object] | None = None,
 ) -> pd.DataFrame:
     """Generate fixed windows and one HR label per window from a single session."""
 
@@ -137,9 +156,36 @@ def generate_session_windows(
         raise ValueError(f"Unsupported label aggregation: {resolved_label_config.aggregation}")
     if window_seconds <= 0 or stride_seconds <= 0:
         raise ValueError("window_seconds and stride_seconds must be positive")
+    if not 0 < min_ppg_coverage <= 1:
+        raise ValueError("min_ppg_coverage must be in (0, 1]")
 
     window_ms = int(window_seconds * 1000)
     stride_ms = int(stride_seconds * 1000)
+    if window_ms < 1 or stride_ms < 1:
+        raise ValueError("Window and stride must be at least one millisecond")
+    session_audit: dict[str, object] = {
+        "participant_id": aligned_session.participant_id,
+        "session_id": aligned_session.session_id,
+        "candidate_windows": 0,
+        "accepted_windows": 0,
+        "dropped_windows": {},
+        "rejected_reference_observations_in_windows": {},
+    }
+    if audit is not None:
+        audit.setdefault("sessions", []).append(session_audit)
+    def drop(reason: str) -> None:
+        counts = session_audit["dropped_windows"]
+        counts[reason] = counts.get(reason, 0) + 1
+
+    reference = aligned_session.reference
+    ecg_audit: dict[str, object] = {}
+    # Adjacent intervals are formed before clipping to windows. Both ECG and
+    # IBI use the second beat's timestamp, including a first beat before start.
+    if resolved_label_config.method == "beat_interval_instant_hr" and "ecg_uv" in reference and (
+        "rr_interval_ms" not in reference or reference["rr_interval_ms"].isna().all()
+    ):
+        reference = build_instant_hr_from_ecg(reference, config=resolved_label_config, audit=ecg_audit)
+        session_audit["ecg_detection"] = ecg_audit
     session_duration_ms = aligned_session.end_ms - aligned_session.start_ms
     if session_duration_ms < window_ms:
         return pd.DataFrame()
@@ -154,23 +200,39 @@ def generate_session_windows(
         range(aligned_session.start_ms, aligned_session.end_ms - window_ms + 1, stride_ms)
     ):
         window_end_ms = window_start_ms + window_ms
+        session_audit["candidate_windows"] += 1
         ppg_window = aligned_session.ppg.loc[
             (aligned_session.ppg["timestamp_ms"] >= window_start_ms)
             & (aligned_session.ppg["timestamp_ms"] < window_end_ms)
         ]
-        reference_window = aligned_session.reference.loc[
-            (aligned_session.reference["timestamp_ms"] >= window_start_ms)
-            & (aligned_session.reference["timestamp_ms"] < window_end_ms)
+        reference_window = reference.loc[
+            (reference["timestamp_ms"] >= window_start_ms)
+            & (reference["timestamp_ms"] < window_end_ms)
         ]
 
         if len(ppg_window) < min_ppg_samples:
+            drop("insufficient_ppg_coverage")
             continue
 
-        label = compute_window_label(reference_window=reference_window, config=resolved_label_config)
+        label_audit: dict[str, object] = {}
+        label = compute_window_label(reference_window=reference_window, config=resolved_label_config,
+                                    audit=label_audit, window_start_ms=window_start_ms, window_end_ms=window_end_ms)
+        observation_counts = session_audit["rejected_reference_observations_in_windows"]
+        for key, value in label_audit.items():
+            if key.endswith("_count"):
+                observation_counts[key] = observation_counts.get(key, 0) + value
         if label is None:
+            drop(str(ecg_audit.get("drop_reason") or label_audit.get("drop_reason") or "invalid_label"))
             continue
+        session_audit["accepted_windows"] += 1
 
         ppg_inverted = bool(ppg_window["ppg_inverted"].all()) if "ppg_inverted" in ppg_window.columns else False
+        if "ppg_inverted" in ppg_window and ppg_window["ppg_inverted"].nunique() != 1:
+            raise ValueError("A window cannot mix PPG polarity rules")
+        if ppg_inverted and "ppg_raw" in ppg_window and not np.array_equal(
+            ppg_window["ppg"].to_numpy(), -ppg_window["ppg_raw"].to_numpy()
+        ):
+            raise ValueError("PPG marked inverted must equal -ppg_raw exactly once")
         ppg_canonical_source = (
             str(ppg_window["ppg_canonical_source"].iloc[0])
             if "ppg_canonical_source" in ppg_window.columns and not ppg_window.empty
@@ -197,6 +259,7 @@ def generate_session_windows(
                 "reference_source": aligned_session.reference_source,
                 "ppg_inverted": ppg_inverted,
                 "ppg_canonical_source": ppg_canonical_source,
+                "ppg_inversion_count": 1 if ppg_inverted else 0,
                 "ppg_timestamps_ms": ppg_window["timestamp_ms"].tolist(),
                 "ppg_values": ppg_window["ppg"].tolist(),
                 "ppg_raw_values": ppg_window["ppg_raw"].tolist() if "ppg_raw" in ppg_window.columns else [],
@@ -207,6 +270,19 @@ def generate_session_windows(
         )
 
     return pd.DataFrame(window_rows)
+
+
+def summarize_window_audit(audit: dict[str, object]) -> dict[str, object]:
+    """Count candidates, accepted windows and mutually exclusive drop reasons."""
+
+    result: dict[str, object] = {"candidate_windows": 0, "accepted_windows": 0, "dropped_windows": {}}
+    for session in audit.get("sessions", []):
+        result["candidate_windows"] += session["candidate_windows"]
+        result["accepted_windows"] += session["accepted_windows"]
+        for reason, count in session["dropped_windows"].items():
+            result["dropped_windows"][reason] = result["dropped_windows"].get(reason, 0) + count
+    result["dropped_window_count"] = sum(result["dropped_windows"].values())
+    return result
 
 
 def split_by_participant(
